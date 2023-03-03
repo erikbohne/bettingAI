@@ -12,8 +12,9 @@ from nltk.tokenize import word_tokenize
 from time import strptime
 
 from values import *
+from gather import *
 
-def tokenize_page(url):
+def tokenize_page(url, match=False):
     """
     Returns the tokens from the website
     """
@@ -27,6 +28,15 @@ def tokenize_page(url):
     # Tokenize the text so it is iterable
     tokenized = [token for token in word_tokenize(text) if token not in notIncluded]
     
+    if match: # Get spesified data for matches
+        i = 0
+        for token in tokenized:
+            if token == "matchName":
+                information = tokenized[i:]
+                break
+            i += 1
+        return information
+    
     return tokenized
 
 def get_match_links(teamID, teamUrlName):
@@ -36,13 +46,17 @@ def get_match_links(teamID, teamUrlName):
     # Tokenize page
     tokenized = tokenize_page(f"https://www.fotmob.com/teams/{teamID}/fixtures/")
 
-    print(teamUrlName)
     # Find all the urls from the page
     matchUrls = list()
     for token in tokenized:
         if token[:6] == "/match" and teamUrlName in token:
             matchUrls.append(token)
-
+    
+    print(len(matchUrls))
+    # Remove duplicates links
+    matchUrls = [*set(matchUrls)]
+    print(len(matchUrls))
+    
     return matchUrls
 
 def get_match_info(url):
@@ -50,33 +64,24 @@ def get_match_info(url):
     Returns a dictionary of all information from the match
     """
     # Request page
-    tokenized = tokenize_page("https://www.fotmob.com" + url)
-    #for i, token in enumerate(tokenized):
-    #    if token == "Who":
-    #        tokenized = tokenized[i + 3:]
-            
-    print(tokenized[:500])
+    tokenized = tokenize_page("https://www.fotmob.com" + url, match=True)
+ 
     # Set up lists
     home_stats = []
     away_stats = []
     
     # Get time and date of match
-    dtg = {
-        'weekday' : 0,
-        'month' : 0,
-        'date' : 0,
-        'year' : 0,
-        'time' : 0,
-        'timezone' : "UTC"
-    }
+    dtg = gather_dtg(tokenized[:50])
+    print(dtg)
     
-    # Block to get stats from match
-    home_team = 0
-    away_team = 0
-    home_score = 0
-    away_score = 0
-    home_gd = int(home_score) - int(away_score)
-    away_gd = home_gd * -1
+    # Get competition name and id
+    league = gather_league(tokenized[10:50])
+    print(league)
+    
+    # Block to get init stats from match
+    mainInfo = gather_main_info(tokenized)
+    
+    # Block to get all stats from match
     
     
     

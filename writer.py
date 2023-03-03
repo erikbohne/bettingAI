@@ -3,6 +3,7 @@ from firebase_admin import credentials
 from firebase_admin import db
 
 from values import *
+from scraper import *
 
 
 def runner():
@@ -16,12 +17,13 @@ def runner():
     
     for league in LEAGUES:
         for team in league["teams"]:
-            # TODO: 
-            # 1 - Get a link to all fixtures that are not saved
-            fixtures = get_match_links()
+            
+            fixtures = get_match_links() # Gets a list of all matches for the team
+            
             for fixture in fixtures:
                 # TODO:
                 # 1 - Gather info about that fixture
+                info = get_match_info(fixture)
                 # 2 - Add fixture to the databse
             for players in PLAYERS[team]:
                 # TODO: 
