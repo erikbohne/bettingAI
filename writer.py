@@ -18,6 +18,7 @@ def runner():
         for team in league["teams"]:
             # TODO: 
             # 1 - Get a link to all fixtures that are not saved
+            fixtures = get_match_links()
             for fixture in fixtures:
                 # TODO:
                 # 1 - Gather info about that fixture
@@ -36,7 +37,7 @@ def initFirebase():
     """
     Connects and initializes Firebase
     """
-    cred = credentials.Certificate("keys/serviceAccountKey.json")
+    cred = credentials.Certificate("../keys/serviceAccountKey.json")
     firebase_admin.initialize_app(cred, {
     "databaseURL" : "https://tipping-c53ce-default-rtdb.europe-west1.firebasedatabase.app"
     })
