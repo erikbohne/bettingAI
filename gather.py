@@ -26,7 +26,10 @@ def gather_league(information):
                 if information[i + j] == "leagueRoundName":
                     name = ' '.join([information[i + n] for n in range(3, j)])
     
-    return {"name" : name, "id": id}
+    try:
+        return {"name" : name, "id": id}
+    except UnboundLocalError:
+        return {"name" : None, "id" : None}
 
 def gather_main_info(information):
     """
@@ -118,17 +121,23 @@ def gather_match_statistics(information):
     """
     for i, info in enumerate(information):
         if info == "showSuperLive":
-            start = i + 85
+            total = 0
+            for j in range(100):
+                if information[i + j] == "Total":
+                    total += 1
+                if total == 2:
+                    start = i + j
+                    break
     
     # Find all shots statistics
     shots = []
-    for i in range(start, 1000):
+    for i in range(start, start + 100):
         if any(char.isdigit() for char in information[i]): # check if there is a digit
             shots.append(information[i].split(",")) # from eg '14,7' -> ['14', '7']
             if len(shots) == 7:
                 start = i + 1
                 break
-            
+
     # Put all shots info in dict
     shots = {
         "total shots" : shots[0],
@@ -139,7 +148,6 @@ def gather_match_statistics(information):
         "inside box" : shots[5],
         "outside box" : shots[6]
     }
-    print(shots)
 
     # Find all xG statistics
     xG = []
@@ -163,7 +171,6 @@ def gather_match_statistics(information):
         "set play" : xG[4],
         "on target" : xG[5]
     }
-    print(xG)
     
     # Find and gather passes statistics
     passes = []
@@ -192,15 +199,88 @@ def gather_match_statistics(information):
         "accurate crosses" : passes[5],
         "throws" : passes[6]
     }
-    print(passes)
     
+    # Find and gather defence statistics
+    defence = []
+    cooldown = 0
+    for i in range(start, start + 100):
+        if cooldown != 0:
+            cooldown -= 1
+            continue
+        if any(char.isdigit() for char in information[i]):
+            if len(defence) in [0]: # for the stats that include accuracy
+                defence.append([information[j] for j in range(i, i + 5)])
+                cooldown = 4
+            else:
+                defence.append(information[i].split(","))
+            if len(defence) == 5:
+                start = i + 1
+                break
     
-    # TODO Find and gather defence statistics
-    # TODO Find and gather dicipline stats
+    # Put all defence stats in a dict
+    defence = {
+        "tackles won" : defence[0],
+        "interceptions": defence[1],
+        "blocks" : defence[2],
+        "clearances" : defence[3],
+        "keeper saves" : defence[4]
+    }
+            
+            
+    
     # TODO Find and gather duels stats
+    duels = []
+    cooldown = 0
+    for i in range(start, start + 100):
+        if cooldown != 0:
+            cooldown -= 1
+            continue
+        if any(char.isdigit() for char in information[i]):
+            if len(duels) in [1, 2, 3]: # for the stats that include accuracy
+                duels.append([information[j] for j in range(i, i + 5)])
+                cooldown = 4
+            else:
+                duels.append(information[i].split(","))
+            if len(duels) == 4:
+                start = i + 6
+                break
     
+    # Put all duel stats in a dict
+    duels = {
+        "duels won" : duels[0],
+        "ground duels" : duels[1],
+        "aerial duels" : duels[2],
+        "successfull dribbles" : duels[3]
+    }
     
+    # Find and gather dicipline stats
+    cards = []
+    for i in range(start, start + 50):
+        if any(char.isdigit() for char in information[i]): # check if there is a digit
+            cards.append(information[i].split(",")) # from eg '14,7' -> ['14', '7']
+            if len(cards) == 2:
+                break
     
+    # Put card stats in a dict
+    cards = {
+        "yellow cards" : cards[0],
+        "red cards" : cards[1]
+    }
+    
+    return {
+        "shots" : shots,
+        "xG" : xG,
+        "passes" : passes,
+        "defence" : defence,
+        "duels" : duels,
+        "cards" : cards
+    }
+
+def gather_player_links(information):
+    """
+    Returns a list of all the players from the match
+    """
+    # TODO
     
 
     

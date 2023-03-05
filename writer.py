@@ -14,18 +14,21 @@ def runner():
     print("Connecting to firebase...")
     if not initFirebase():
         raise ValueError("Could not connect to Firebase")
+    else:
+        print("-> Connected to firebase")
     
     for league in LEAGUES:
         for team in league["teams"]:
             
-            fixtures = get_match_links() # Gets a list of all matches for the team
+            fixtures = get_match_links(team["id"], team["UrlName"]) # Gets a list of all matches for the team
+            players = get_player_links() # Gets a list of all players of the team
             
             for fixture in fixtures:
                 # TODO:
                 # 1 - Gather info about that fixture
                 info = get_match_info(fixture)
                 # 2 - Add fixture to the databse
-            for players in PLAYERS[team]:
+            for player in players:
                 # TODO: 
                 # 1 - Get a link to the current player
                 # 2 - Gather info about current player

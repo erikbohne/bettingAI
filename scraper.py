@@ -8,9 +8,12 @@ Library that is created to scrape fotbmob.com to gather match info
 from bs4 import BeautifulSoup
 import requests
 import datetime
+import datetime
+
 from nltk.tokenize import word_tokenize
 from time import strptime
 
+# My own libraries
 from values import *
 from gather import *
 
@@ -74,20 +77,31 @@ def get_match_info(url):
     dtg = gather_dtg(tokenized[:50])
     print(dtg)
     
+    # Check if match is in the past
+    today = datetime.date.today() # current day
+    difference = today - datetime.date(
+                            int(dtg["year"]), 
+                            strptime(dtg["month"],'%b').tm_mon, # change month from word -> int
+                            int(dtg["date"])) # find time delta
+    if difference.days < 1: # if game is not played yet
+        return False
+    
     # Get competition name and id
     league = gather_league(tokenized[10:50])
-    print(league)
+    if league["id"] != "47":
+        return 0
     
     # Block to get init stats from match
     mainInfo = gather_main_info(tokenized[:70])
     print(mainInfo)
     
     # Block to get all stats from match
-    statistics = gather_match_statistics(tokenized[1500:3000])
+    statistics = gather_match_statistics(tokenized[1500:4000])
     
     # Get player stats
     
-    
+    print(statistics)
+    exit()
     
     
     
