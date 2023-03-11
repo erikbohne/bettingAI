@@ -276,11 +276,57 @@ def gather_match_statistics(information):
         "cards" : cards
     }
 
-def gather_player_links(information):
+def gather_player_statistics(information):
     """
-    Returns a list of all the players from the match
+    Returns a dict with all the statistics from the match:
+    
+    - Bio:
+        * Height
+        * Preffered foot
+        * Age
+        * Country
+        * Shirt
+        * Market val (Euro)
+        * Primary position
+    
+    - Season stats:
+        * Matches
+        * Goals
+        * Assists
+        * FotMob Rating  
     """
-    # TODO
+    # Find bio statistics
+    bio = []
+    indicator, idx = ["Height", "foot", "Age", "Country", "Shirt", "Value", "Position"], 0
+    for i, _ in enumerate(information):
+        if information[i] == indicator[idx]: # TODO Make is so it can append both Strike and Centre back.
+            bio.append(information[i + 1])
+            idx += 1
+        if len(bio) == 7:
+            break
+    
+    # Create a dictionary with bio statistics
+    bio = {indicator[i] : bio[i] for i in range(len(bio))}
+    
+    # Find indexes for next iteration
+    for i, info in enumerate(information):
+        if info == "__NEXT_DATA__":
+            start = i
+    
+    # Find season statistics
+    season = []
+    indicator, idx = ["Matches", "Goals", "Assists", "FotMob"], 0
+    for i, _ in enumerate(information[start:start+200]):
+        if information[start + i] == indicator[idx]:
+            season.append(information[start + i - 1])
+            idx += 1
+        if len(season) == 4:
+            break
+    
+    # Create a dictionary with season stats
+    season = {indicator[i] : season[i] for i in range(len(season))}
+
+    return {"bio": bio, "season" : season}
     
 
     

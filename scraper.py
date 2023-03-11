@@ -62,6 +62,26 @@ def get_match_links(teamID, teamUrlName):
     
     return matchUrls
 
+def get_player_links(teamID):
+    """
+    Returns a list off all players in a team
+    """
+    # Tokenize page
+    tokenized = tokenize_page(f"https://www.fotmob.com/teams/{teamID}/squad/")
+    
+    # Main page and specific page
+    main = "//www.fotmob.com"
+    player = "/players"
+    
+    # Find all the urls from the page
+    playerUrls = []
+    for token in tokenized:
+        if token[len(main):len(main) + len(player)] == player:
+            if token[len(main):] not in playerUrls:
+                playerUrls.append(token[len(main):])
+    
+    return playerUrls
+
 def get_match_info(url):
     """
     Returns a dictionary of all information from the match
@@ -93,15 +113,23 @@ def get_match_info(url):
     
     # Block to get init stats from match
     mainInfo = gather_main_info(tokenized[:70])
-    print(mainInfo)
     
     # Block to get all stats from match
     statistics = gather_match_statistics(tokenized[1500:4000])
     
-    # Get player stats
-    
-    print(statistics)
-    exit()
+    # Get player stats from match
     
     
+    return {"dtg" : dtg, "league": league, "maininfo" : mainInfo, "statistics" : statistics}
     
+def get_player_info(url):  
+    """
+    Returns a dictionary of all information from the player.
+    """
+    # Request page
+    tokenized = tokenize_page("https://www.fotmob.com" + url)
+    
+    # Get player info
+    playerInfo = gather_player_statistics(tokenized)
+    
+    return playerInfo

@@ -21,19 +21,26 @@ def runner():
         for team in league["teams"]:
             
             fixtures = get_match_links(team["id"], team["UrlName"]) # Gets a list of all matches for the team
-            players = get_player_links() # Gets a list of all players of the team
+            players = get_player_links(team["id"]) # Gets a list of all players of the team
             
             for fixture in fixtures:
-                # TODO:
-                # 1 - Gather info about that fixture
+                # Gather info about that fixture
                 info = get_match_info(fixture)
-                # 2 - Add fixture to the databse
+                print(info)
+                
+                # TODO Add fixture to the databse
+                #ref = db.reference("/")
+                #ref = ref.child(f"{fixture[1:]}")
+                #ref.set(info)
+                
             for player in players:
                 # TODO: 
-                # 1 - Get a link to the current player
-                # 2 - Gather info about current player
-                # 3 - Update info about player in the database
-            for round in ROUNDS:
+                # 1 - Gather info about current player
+                print(player)
+                info = get_player_info(player)
+                print(info)
+                # 2 - Update info about player in the database
+            #for round in ROUNDS:
                 # TODO: 
                 # 1 - Calculate new table for current previous round
                 # 2 - Update database
@@ -49,4 +56,6 @@ def initFirebase():
     
     return True
     
-    
+
+if __name__ == "__main__":
+    runner()
