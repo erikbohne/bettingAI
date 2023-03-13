@@ -276,7 +276,7 @@ def gather_match_statistics(information):
         "cards" : cards
     }
 
-def gather_player_statistics(information):
+def gather_player_bio(information):
     """
     Returns a dict with all the statistics from the match:
     
@@ -327,8 +327,51 @@ def gather_player_statistics(information):
     season = {indicator[i] : season[i] for i in range(len(season))}
 
     return {"bio": bio, "season" : season}
-    
 
+def gather_player_performance(information):
+    """
+    Gather player performance of each player from each team
+    - Player:
+        * Shirt
+        * Role
+        * FotMob Rating
+        * Minutes played
+        * Goals
+        * Assists
+        * Total shots
+        * Accurate passes [accurate/inaccurate, %]
+        * Chances created
+        * Conceded penalty
+    - Attack stats:
+        * Touches
+        * Successful dribbles
+        * Passes into final third
+        * Accurate long balls
+        * Dispossessed
+    - Defence stats:
+        * Tackles won
+        * Blocks
+        * Clearances
+        * Headed clearance
+        * Recoveries
+    - Duels stats:
+        * Ground duels won
+        * Aerial duels won
+        * Was fouled
+        * Fouls comitted
+    """
+    playerPerformance = {} # init the dict to store players
+    
+    #for i, info in enumerate(information):
+    #    if info == "usingOptaId":
+    #        print(i)
+    #        information[i:]
+    #        break
+    
+    for i, info in enumerate(information):
+        if info == "firstName":
+            pass
+            #print(information[i + 1], information[i + 3])
     
     
-                
+    

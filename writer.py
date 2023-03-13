@@ -26,7 +26,6 @@ def runner():
             for fixture in fixtures:
                 # Gather info about that fixture
                 info = get_match_info(fixture)
-                print(info)
                 
                 # TODO Add fixture to the databse
                 #ref = db.reference("/")
@@ -36,9 +35,7 @@ def runner():
             for player in players:
                 # TODO: 
                 # 1 - Gather info about current player
-                print(player)
                 info = get_player_info(player)
-                print(info)
                 # 2 - Update info about player in the database
             #for round in ROUNDS:
                 # TODO: 

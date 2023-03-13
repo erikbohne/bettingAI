@@ -127,7 +127,15 @@ LEAGUES = [
     },
     {
       "name" : "LaLiga",
-      "id" : 87
+      "id" : 87,
+      "teams": [
+                    {
+                        "name" : "Barcelona",
+                        "short" : "Barcelona",
+                        "UrlName" : "barcelona",
+                        "id" : 8634
+                    }
+                ]
     },
     {
       "name" : "Bundesliga",

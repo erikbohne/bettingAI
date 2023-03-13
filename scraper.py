@@ -55,10 +55,8 @@ def get_match_links(teamID, teamUrlName):
         if token[:6] == "/match" and teamUrlName in token:
             matchUrls.append(token)
     
-    print(len(matchUrls))
     # Remove duplicates links
     matchUrls = [*set(matchUrls)]
-    print(len(matchUrls))
     
     return matchUrls
 
@@ -95,7 +93,6 @@ def get_match_info(url):
     
     # Get time and date of match
     dtg = gather_dtg(tokenized[:50])
-    print(dtg)
     
     # Check if match is in the past
     today = datetime.date.today() # current day
@@ -118,18 +115,18 @@ def get_match_info(url):
     statistics = gather_match_statistics(tokenized[1500:4000])
     
     # Get player stats from match
-    
+    playerPerformance = gather_player_performance(tokenized[2000:])
     
     return {"dtg" : dtg, "league": league, "maininfo" : mainInfo, "statistics" : statistics}
     
-def get_player_info(url):  
+def get_player_bio(url):  
     """
-    Returns a dictionary of all information from the player.
+    Returns a dictionary with information from the player bio on fotmob.
     """
     # Request page
     tokenized = tokenize_page("https://www.fotmob.com" + url)
     
     # Get player info
-    playerInfo = gather_player_statistics(tokenized)
+    playerInfo = gather_player_bio(tokenized)
     
     return playerInfo
