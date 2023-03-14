@@ -332,8 +332,6 @@ def gather_player_performance(information):
     """
     Gather player performance of each player from each team
     - Player:
-        * Shirt
-        * Role
         * FotMob Rating
         * Minutes played
         * Goals
@@ -362,16 +360,39 @@ def gather_player_performance(information):
     """
     playerPerformance = {} # init the dict to store players
     
-    #for i, info in enumerate(information):
-    #    if info == "usingOptaId":
-    #        print(i)
-    #        information[i:]
-    #        break
-    
     for i, info in enumerate(information):
-        if info == "firstName":
-            pass
-            #print(information[i + 1], information[i + 3])
+        if info == "lineup" and information[i + 1] == "lineup":
+            information = information[i:]
+    
+    playerInfo = ["Top", "rating", "played", "Goals", "Assists", "shots", "passes", "created", "Touches",
+                  "third", "Dispossessed", "won", "Recoveries", "won", "won", "fouled", "committed"]
+    idx = 0
+    
+    print(information[:1500])
+    currPlayer = [] # to store current player stats
+    onPlayer = False # to switch between to modes: gather stats or find new player
+    for i, info in enumerate(information):
+        
+        # Check if all info is gathered from current player
+        if len(currPlayer) == len(playerInfo) - 1:
+            playerPerformance[playerName] = currPlayer # append the player stats to the performance dict
+            onPlayer = False # mark the end of this player
+            currPlayer, idx = [], 0 # reset stats list and index
+        
+        if onPlayer: # if in gather stats mode
+            if info == playerInfo[idx]: # find current stat
+                if idx > 0:
+                    currPlayer.append(information[i + 1].replace(":", "")) # append the current stat and remove colon from number: ":2" -> "2"
+                idx += 1 # next index value
+        else: # if in find new player mode
+            if info == "firstName": # gather the name of the player
+                for j in range(10):
+                    if information[i + j] == "imageUrl": # full name is between "firstName and imageUrl"
+                        playerName = " ".join([
+                                        information[i + n] for n in range(j) 
+                                        if information[i + n] not in ["firstName", "lastName"]
+                                            ])  
+                    onPlayer = True # we are on a player and the following stats will belong to current player
     
     
     

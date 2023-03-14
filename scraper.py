@@ -110,7 +110,7 @@ def get_match_info(url):
     
     # Block to get init stats from match
     mainInfo = gather_main_info(tokenized[:70])
-    
+    print(mainInfo)
     # Block to get all stats from match
     statistics = gather_match_statistics(tokenized[1500:4000])
     
