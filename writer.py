@@ -25,22 +25,32 @@ def runner():
             
             for fixture in fixtures:
                 # Gather info about that fixture
-                info = get_match_info(fixture)
+                try:
+                    matchStats, playerStats = get_match_info(fixture)
+                except:
+                    continue
                 
                 # TODO Add fixture to the databse
-                #ref = db.reference("/")
-                #ref = ref.child(f"{fixture[1:]}")
-                #ref.set(info)
+                matchID = fixture.split("/")[2]
+                ref = db.reference(f"/{league['name']}/{team['name']}")
+                ref = ref.child(f"{matchID}")
+                ref.set(matchStats)
+                ref = ref.child("Players")
+                ref.set(playerStats)
                 
             for player in players:
                 # TODO: 
                 # 1 - Gather info about current player
-                info = get_player_info(player)
+                try:
+                    players.append(get_player_bio(player))
+                except:
+                    pass
                 # 2 - Update info about player in the database
             #for round in ROUNDS:
                 # TODO: 
                 # 1 - Calculate new table for current previous round
                 # 2 - Update database
+            
                 
 def initFirebase():
     """
