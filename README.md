@@ -18,9 +18,9 @@ Betting AI project that includes gathering and processing data, training and tun
 
 ### Prerequisites
 - Python 3.x
-"""
+```
 pip install requirements.txt
-"""
+```
 
 ## Usage
 
