@@ -36,6 +36,18 @@ Program uses mainly Python 3.X
 pip install requirements.txt
 ```
 
+This will install all the necesarry packages for all modules in BettingAI
+```
+# For module 1 - writer
+BeautifulSoup
+requests
+datetime
+nltk
+time
+
+# For module 2 - predictor
+```
+
 ## Usage
 
 ## Modules
