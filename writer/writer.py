@@ -1,9 +1,8 @@
-import firebase_admin
+import psycopg2
 import json
-from firebase_admin import credentials
-from firebase_admin import db
+import sys
 
-
+from colorama import Fore, Back, Style
 from values import *
 from scraper import *
 
@@ -13,13 +12,13 @@ def runner():
     Main function of the program that runs the logic
     """
     
-    print("Connecting to firebase...")
-    if not initFirebase():
-        raise ValueError("Could not connect to Firebase")
+    print("Connecting to PostgreSQL...")
+    if not initPostgreSQL():
+        sys.exit(Fore.RED + "-> Could not connect to PostgreSQL")
     else:
-        print("-> Connected to firebase")
+        print(Fore.GREEN + "-> Connected to PostgreSQL")
     
-    leagues = loadLeagues()
+    leagues = loadJSON("leagues.json")
     
     for league in leagues.keys():
         print(f"Updating {league}")
@@ -57,22 +56,35 @@ def runner():
                 # 2 - Update database
             
                 
-def initFirebase():
+def initPostgreSQL():
     """
-    Connects and initializes Firebase
+    Connects and initializes PostgreSQL
     """
-    cred = credentials.Certificate("../../keys/serviceAccountKey.json")
-    firebase_admin.initialize_app(cred, {
-    "databaseURL" : "https://tipping-c53ce-default-rtdb.europe-west1.firebasedatabase.app"
-    })
+    # Import database creditations
+    creds = loadJSON("../../keys/postgreSQLKey.json")
+
+    try:
+        # Establish a connection
+        connection = psycopg2.connect(
+            host=creds["host"],
+            port=creds["port"],
+            dbname=creds["dbname"],
+            user=creds["user"],
+            password=creds["password"],
+            connect_timeout=10
+        )
+    except Exception as e:
+        # Connection failed
+        print(f"Error: {e}")
+        return False 
     
     return True
 
-def loadLeagues():
+def loadJSON(path):
     """
     Returns data from league
     """
-    return json.load(open("leagues.json"))
+    return json.load(open(path))
 
 def createReport(data):
     """
