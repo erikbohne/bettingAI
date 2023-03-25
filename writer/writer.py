@@ -1,8 +1,9 @@
 import psycopg2
 import json
 import sys
+import datetime as dt
 
-from colorama import Fore, Back, Style
+from colorama import Fore
 from values import *
 from scraper import *
 
@@ -12,15 +13,19 @@ def runner():
     Main function of the program that runs the logic
     """
     
+    startTime = dt.datetime.now()
+    
     print("Connecting to PostgreSQL...")
     if not initPostgreSQL():
-        sys.exit(Fore.RED + "-> Could not connect to PostgreSQL")
+        pass
+        #sys.exit(Fore.RED + "-> Could not connect to PostgreSQL")
     else:
         print(Fore.GREEN + "-> Connected to PostgreSQL")
     
     leagues = loadJSON("leagues.json")
     
     for league in leagues.keys():
+        break
         print(f"Updating {league}")
         for team in leagues[league]["teams"]:
             
@@ -54,6 +59,23 @@ def runner():
                 # TODO: 
                 # 1 - Calculate new table for current previous round
                 # 2 - Update database
+    
+    # Get the end time of the data gathering
+    endTime = dt.datetime.now()
+    
+    # For test purposes only
+    dictionary = {
+        "mExplored" : 4,
+        "mAdded" : 2,
+        "pExplored" : 34,
+        "pAdded" : 2
+    }
+    
+    # Create a report of the writer.py execution
+    createReport(startTime, endTime, dictionary)
+    
+    # Exit program after successful execution
+    sys.exit(Fore.GREEN + "writer.py successfully run in a time of " + str(endTime - startTime))
             
                 
 def initPostgreSQL():
@@ -82,24 +104,41 @@ def initPostgreSQL():
 
 def loadJSON(path):
     """
-    Returns data from league
+    Returns data from JSON file @ path
     """
     return json.load(open(path))
 
-def createReport(data):
+def createReport(start, end, report):
     """
-    Creates reports with information about the execution:
+    Creates reports with information about the execution.
+    Saves report as a .txt file and adds to SQLdatabase.
+    """
+    # Format report content
+    reportContent = f"""
+    -------------------
+    Time started: {start}
+    Time ended: {end}
+    Time delta: {end - start}
+    Matches explored: {report.get("mExplored")}
+    Matches added: {report.get("mAdded")}
+    Players explored: {report.get("pExplored")}
+    Players added: {report.get("pAdded")}
+    -------------------
+    """
     
-        - Time started
-        - Time ended
-        - Delta
-        - Matches explored
-        - Matches added
-        - Players explored
-        - Players added
-
-    Saves report as a .txt file.
-    """
+    # Decide filename
+    today = dt.datetime.now()
+    formattedDate = today.strftime("%d %B %Y").lower()
+    filename = f"report {formattedDate}.txt"
+    
+    # Create and write to file
+    with open(filename, "w") as f:
+        f.write(reportContent)
+    
+    # Confirm that the report was created
+    print(f"Report saved as {filename}")
+    
+    # TODO: Add report to SQL database
 
 if __name__ == "__main__":
     runner()
