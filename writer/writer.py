@@ -1,7 +1,10 @@
-import psycopg2
 import json
 import sys
+import os
+import sqlalchemy
 import datetime as dt
+
+from google.cloud.sql.connector import Connector
 
 from colorama import Fore
 from values import *
@@ -17,8 +20,7 @@ def runner():
     
     print("Connecting to PostgreSQL...")
     if not initPostgreSQL():
-        pass
-        #sys.exit(Fore.RED + "-> Could not connect to PostgreSQL")
+        sys.exit(Fore.RED + "-> Could not connect to PostgreSQL")
     else:
         print(Fore.GREEN + "-> Connected to PostgreSQL")
     
@@ -85,18 +87,23 @@ def initPostgreSQL():
     # Import database creditations
     creds = loadJSON("../../keys/postgreSQLKey.json")
 
-    try:
-        # Establish a connection
-        connection = psycopg2.connect(
-            host=creds["host"],
-            port=creds["port"],
-            dbname=creds["dbname"],
+    def getConnection():
+        connector = Connector()
+        connection = connector.connect(
+            creds["connectionName"],
+            "pg8000",
             user=creds["user"],
             password=creds["password"],
-            connect_timeout=10
+            db=creds["dbname"]
         )
-    except Exception as e:
-        # Connection failed
+        return connection
+    
+    try: # Try to connecto to database
+        pool = sqlalchemy.create_engine(
+            "postgresql+pg8000://",
+            creator=getConnection,
+        )
+    except Exception as e: # Connection failed
         print(f"Error: {e}")
         return False 
     
@@ -132,7 +139,7 @@ def createReport(start, end, report):
     filename = f"report {formattedDate}.txt"
     
     # Create and write to file
-    with open(filename, "w") as f:
+    with open(os.path.join("reports", filename), "w") as f:
         f.write(reportContent)
     
     # Confirm that the report was created
