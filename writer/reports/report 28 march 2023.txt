@@ -1,0 +1,11 @@
+
+    -------------------
+    Time started: 2023-03-28 16:50:22.296007
+    Time ended: 2023-03-28 16:50:22.325683
+    Time delta: 0:00:00.029676
+    Matches explored: 4
+    Matches added: 2
+    Players explored: 34
+    Players added: 2
+    -------------------
+    

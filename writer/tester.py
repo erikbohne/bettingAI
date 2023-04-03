@@ -7,8 +7,6 @@ import json
 file = open("leagues.json")
 data = json.load(file)
 
-print(data)
-exit()
 
 for league in LEAGUES:
     for team in league["teams"]:
