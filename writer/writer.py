@@ -10,6 +10,7 @@ from colorama import Fore
 from values import *
 from scraper import *
 
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '../../keys/googleCloudKey.json'
 
 def runner():
     """
@@ -19,7 +20,9 @@ def runner():
     startTime = dt.datetime.now()
     
     print("Connecting to PostgreSQL...")
-    if not initPostgreSQL():
+    # Establish connection to the database
+    connection = initPostgreSQL()
+    if connection is None:
         sys.exit(Fore.RED + "-> Could not connect to PostgreSQL")
     else:
         print(Fore.GREEN + "-> Connected to PostgreSQL")
@@ -99,15 +102,15 @@ def initPostgreSQL():
         return connection
     
     try: # Try to connecto to database
-        pool = sqlalchemy.create_engine(
+        engine = sqlalchemy.create_engine(
             "postgresql+pg8000://",
             creator=getConnection,
         )
+        #connection = engine.connect()
+        return engine
     except Exception as e: # Connection failed
         print(f"Error: {e}")
-        return False 
-    
-    return True
+        return None
 
 def loadJSON(path):
     """

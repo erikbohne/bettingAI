@@ -89,7 +89,7 @@ def gather_match_statistics(information):
         * xG second half
         * xG open play
         * xG set play
-        * xG og target (xGOT)
+        * xG on target (xGOT)
     
     - Passes:
         * Passes
