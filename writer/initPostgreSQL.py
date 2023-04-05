@@ -2,6 +2,7 @@ import sys
 
 from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, TIMESTAMP
 from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy.schema import UniqueConstraint
 
 from colorama import Fore
 from writer import initPostgreSQL
@@ -30,6 +31,8 @@ def init_database():
         country = Column(String, nullable=False)
         n_teams = Column(Integer, nullable=False)
         level = Column(Integer, nullable=False)
+        
+        __table_args__ = (UniqueConstraint("id", "name", name="unique_league_in_leagues"),)
     
     class Teams(Base):
         __tablename__ = "teams"
@@ -37,6 +40,8 @@ def init_database():
         name = Column(String, nullable=False)
         stadium = Column(String, nullable=False)
         league_id = Column(Integer, ForeignKey('leagues.id'))
+        
+        __table_args__ = (UniqueConstraint("id", "name", name="unique_team_in_teams"),)
         
     class Players(Base):
         __tablename__ = "players"
@@ -57,8 +62,11 @@ def init_database():
         assists = Column(Integer)
         rating = Column(Float)
         
+        # Relationships
         playerstats = relationship("PlayerStats", back_populates="player")
         team = relationship("Teams")
+        
+        __table_args__ = (UniqueConstraint("id", "name", name = "unique_player_in_players"),)
         
     class PlayerStats(Base):
         __tablename__ = "playerstats"
@@ -77,6 +85,8 @@ def init_database():
         date = Column(TIMESTAMP, nullable=False)
         playerstats = relationship("PlayerStats", back_populates="match")
         matchstats = relationship("MatchStats", back_populates="match")
+        
+        __table_args__ = (UniqueConstraint("id", name="unique_match_in_matches"),)
         
     class MatchStats(Base):
         __tablename__ = "matchstats"
@@ -128,7 +138,8 @@ def init_database():
         ground_duels_won = Column(Integer)
         aerial_duels_won = Column(Integer)
         successfull_dribbles = Column(Integer)
-        
+     
+    #Base.metadata.drop_all(connection)   
     Base.metadata.create_all(connection)
         
         

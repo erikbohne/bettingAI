@@ -5,6 +5,9 @@ import sqlalchemy
 import datetime as dt
 
 from google.cloud.sql.connector import Connector
+from sqlalchemy.orm import sessionmaker
+from databaseClasses import *
+
 
 from colorama import Fore
 from values import *
@@ -26,14 +29,17 @@ def runner():
         sys.exit(Fore.RED + "-> Could not connect to PostgreSQL")
     else:
         print(Fore.GREEN + "-> Connected to PostgreSQL")
+        
+    # Start session with connection
+    Session = sessionmaker(connection)
+    session = Session()
     
+    # Import leagues, think i will change this to get it from the PostgreSQL databse
     leagues = loadJSON("leagues.json")
     
     for league in leagues.keys():
-        break
-        print(f"Updating {league}")
+        print(Fore.MAGENTA + f"Updating {league}" + Fore.WHITE)
         for team in leagues[league]["teams"]:
-            
             fixtures = get_match_links(team["id"], team["UrlName"]) # Gets a list of all matches for the team
             players = get_player_links(team["id"]) # Gets a list of all players of the team
             
@@ -41,16 +47,16 @@ def runner():
                 # Gather info about that fixture
                 try:
                     matchStats, playerStats = get_match_info(fixture)
+                    print(matchStats, playerStats)
+                    exit()
                 except:
-                    continue
-                
+                    pass
                 # TODO Add fixture to the databse
-                matchID = fixture.split("/")[2]
-                ref = db.reference(f"/{league['name']}/{team['name']}")
-                ref = ref.child(f"{matchID}")
-                ref.set(matchStats)
-                ref = ref.child("Players")
-                ref.set(playerStats)
+                try:
+                    match = Matches(id=fixture.split("/")[1], home_team_id="", away_team_id="", league_id="", date="")
+                except:
+                    # TODO
+                    pass
                 
             for player in players:
                 # TODO: 

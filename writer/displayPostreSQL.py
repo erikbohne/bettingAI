@@ -18,7 +18,7 @@ def display_table_data(table_name):
     with engine.connect() as connection:
         df = pd.read_sql_query(query, connection)
         print(f"Data for {table_name}:")
-        print(df)
+        print(df.head(10))
 
 table_names = ['leagues', 'teams', 'players', 'playerstats', 'matches', 'matchstats']
 
@@ -27,7 +27,7 @@ engine = initPostgreSQL()
 if engine is None:
     sys.exit(Fore.RED + "-> Could not connect to PostgreSQL")
 else:
-    print(Fore.GREEN + "-> Connected to PostgreSQL")
+    print(Fore.GREEN + "-> Connected to PostgreSQL" + Fore.WHITE)
 
 for table_name in table_names:
     display_table_schema(table_name)

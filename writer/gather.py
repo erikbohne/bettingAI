@@ -19,12 +19,13 @@ def gather_league(information):
     """
     Returns league name and id for competition
     """
-    for i in range(10):
+    for i in range(50):
         if information[i] == "leagueId":
             id = information[i + 1][1:len(information[i])] # removing colon in front of ID -> ':47' -> '47'
             for j in range(10):
                 if information[i + j] == "leagueRoundName":
                     name = ' '.join([information[i + n] for n in range(3, j)])
+                    break
     
     try:
         return {"name" : name, "id": id}
@@ -122,13 +123,13 @@ def gather_match_statistics(information):
     for i, info in enumerate(information):
         if info == "showSuperLive":
             total = 0
-            for j in range(100):
+            for j in range(200):
                 if information[i + j] == "Total":
                     total += 1
                 if total == 2:
                     start = i + j
                     break
-    
+
     # Find all shots statistics
     shots = []
     for i in range(start, start + 100):
@@ -152,12 +153,17 @@ def gather_match_statistics(information):
     # Find all xG statistics
     xG = []
     current = []
-    for i in range(start, start + 100):
+    penalty = False
+    values = 6
+    for i in range(start, start + 200):
+        if information[i] == "expected_goals_penalty":
+            penalty = True
+            values = 7
         if any(char.isdigit() for char in information[i]):
             current.append(information[i])
             if len(current) % 2 == 0:
                 xG.append(current)
-                if len(xG) == 6:
+                if len(xG) == values:
                     start = i + 1
                     break
                 current = []
@@ -169,7 +175,8 @@ def gather_match_statistics(information):
         "second half" : xG[2],
         "open play" : xG[3],
         "set play" : xG[4],
-        "on target" : xG[5]
+        "penalty" : xG[5] if penalty else None,
+        "on target" : xG[5] if not penalty else xG[6]
     }
     
     # Find and gather passes statistics
@@ -225,10 +232,8 @@ def gather_match_statistics(information):
         "clearances" : defence[3],
         "keeper saves" : defence[4]
     }
-            
-            
     
-    # TODO Find and gather duels stats
+    # Find and gather duels stats
     duels = []
     cooldown = 0
     for i in range(start, start + 100):
@@ -266,7 +271,7 @@ def gather_match_statistics(information):
         "yellow cards" : cards[0],
         "red cards" : cards[1]
     }
-    
+
     return {
         "shots" : shots,
         "xG" : xG,
@@ -300,11 +305,10 @@ def gather_player_bio(information):
     indicator, idx = ["Height", "foot", "Age", "Country", "Shirt", "Value", "Position"], 0
     for i, _ in enumerate(information):
         if information[i] == indicator[idx]: # TODO Make is so it can append both Strike and Centre back.
-            bio.append(information[i + 1])
+            bio.append(information[i])
             idx += 1
         if len(bio) == 7:
             break
-    
     # Create a dictionary with bio statistics
     bio = {indicator[i] : bio[i] for i in range(len(bio))}
     
@@ -363,6 +367,7 @@ def gather_player_performance(information):
     for i, info in enumerate(information):
         if info == "lineup" and information[i + 1] == "lineup": # two lineup following each other is the start signal
             information = information[i:]
+            break
     
     playerInfo = ["Top", "rating", "played", "Goals", "Assists", "shots", "passes", "created", "Touches",
                   "third", "Dispossessed", "won", "Recoveries", "won", "won", "fouled", "committed"]
@@ -391,7 +396,7 @@ def gather_player_performance(information):
                 idx += 1 # next index value
         else: # if in find new player mode
             if info == "firstName": # gather the name of the player
-                for j in range(10):
+                for j in range(20):
                     if information[i + j] == "imageUrl": # full name is between "firstName and imageUrl"
                         playerName = " ".join([
                                         information[i + n] for n in range(j) 
