@@ -75,6 +75,25 @@ def init_database():
         match_id = Column(Integer, ForeignKey('matches.id'))
         player = relationship("Players", back_populates="playerstats")
         match = relationship("Matches", back_populates="playerstats")
+        
+        rating = Column(Float)
+        minutes_played = Column(Integer)
+        goals = Column(Integer)
+        assists = Column(Integer)
+        shots = Column(Integer)
+        passes = Column(Integer)
+        passes_accuracy = Column(Integer)
+        chances_created = Column(Integer)
+        touches = Column(Integer)
+        passes_into_final_third = Column(Integer)
+        dispossesed = Column(Integer)
+        tackles_won = Column(Integer)
+        tackles_accuracy = Column(Integer)
+        recoveries = Column(Integer)
+        ground_duels_won = Column(Integer)
+        aerial_duels_won = Column(Integer)
+        was_fouled = Column(Integer)
+        fouls_committed = Column(Integer)
     
     class Matches(Base):
         __tablename__ = "matches"

@@ -42,6 +42,28 @@ def tokenize_page(url, match=False):
     
     return tokenized
 
+def get_team_links(leagueID, nTeams=None):
+    """
+    Returns a list with all team links in a given league
+    """
+    tokenized = tokenize_page(f"https://www.fotmob.com/leagues/{leagueID}/overview/")
+    
+    # Find all the urls from the page
+    teamUrls = list()
+    for token in tokenized:
+        if token[:6] == "/teams":
+            teamUrls.append(token)
+            
+    # Remove duplicate links
+    teamUrls = [*set(teamUrls)]
+    
+    if nTeams is not None:
+        if len(teamUrls) != nTeams:
+            print(f"found {teamUrls} team Urls but there are {nTeams} in the league")
+        else:
+            return teamUrls
+    return teamUrls
+
 def get_match_links(teamID, teamUrlName):
     """
     Returns a list of all available matches in a given league
@@ -96,10 +118,7 @@ def get_match_info(url):
     
     # Check if match is in the past
     today = datetime.date.today() # current day
-    difference = today - datetime.date(
-                            int(dtg["year"]), 
-                            strptime(dtg["month"],'%b').tm_mon, # change month from word -> int
-                            int(dtg["date"])) # find time delta
+    difference = today - dtg.date() # find time delta
     if difference.days < 1: # if game is not played yet
         return False
     
@@ -129,3 +148,16 @@ def get_player_bio(url):
     playerInfo = gather_player_bio(tokenized)
     
     return playerInfo
+
+def get_name(url):
+    """
+    Return the full name of the player based on the player link
+    """
+    # Get the last part of the link
+    subNames = url.split("/")
+    
+    # Remove all occurrences of "-"
+    subNames = subNames[len(subNames) - 1].split("-")
+    
+    # Return full name with capitalization on the subnames
+    return " ".join([subName.capitalize() for subName in subNames])

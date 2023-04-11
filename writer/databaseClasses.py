@@ -31,8 +31,9 @@ class Players(Base):
     # Bio
     name = Column(String, nullable=False)
     age = Column(Integer, nullable=False)
+    height = Column(Integer, nullable=False)
     country = Column(String, nullable=False)
-    market_val = Column(Float, nullable=False) # Euro in ...
+    market_val = Column(String, nullable=False) # In Euro
     preffered_foot = Column(String, nullable=False)
     primary_postition = Column(String, nullable=False)
     
@@ -56,6 +57,21 @@ class PlayerStats(Base):
     player = relationship("Players", back_populates="playerstats")
     match = relationship("Matches", back_populates="playerstats")
     
+    rating = Column(Float)
+    minutes_played = Column(Integer)
+    goals = Column(Integer)
+    assists = Column(Integer)
+    shots = Column(Integer)
+    passes = Column(Integer)
+    passes_accuracy = Column(Float)
+    chances_created = Column(Integer)
+    touches = Column(Integer)
+    passes_into_final_third = Column(Integer)
+    dispossesed = Column(Integer)
+    tackles_won = Column(Integer)
+    tackles_accuracy = Column(Float)
+    
+    
 class Matches(Base):
     __tablename__ = "matches"
     id = Column(Integer, primary_key=True)
@@ -71,7 +87,7 @@ class Matches(Base):
 class MatchStats(Base):
     __tablename__ = "matchstats"
     id = Column(Integer, primary_key=True)
-    match_id = match_id = Column(Integer, ForeignKey('matches.id'))
+    match_id = Column(Integer, ForeignKey('matches.id'))
     match = relationship("Matches", back_populates="matchstats")
     side = Column(String)
         

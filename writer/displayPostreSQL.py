@@ -12,13 +12,13 @@ def display_table_schema(table_name):
         print(f"Data for {table_name}:")
         print(df)
 
-
 def display_table_data(table_name):
     query = text(f"SELECT * FROM {table_name}")
     with engine.connect() as connection:
         df = pd.read_sql_query(query, connection)
         print(f"Data for {table_name}:")
-        print(df.head(10))
+        print(df.head(200))
+        print(f"Number of rows: {df.shape[0]}")
 
 table_names = ['leagues', 'teams', 'players', 'playerstats', 'matches', 'matchstats']
 
