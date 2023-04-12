@@ -1,251 +1,172 @@
-import json
 import sys
 import os
+import json
+import logging
 import sqlalchemy
 import datetime as dt
 
 from google.cloud.sql.connector import Connector
 from sqlalchemy.orm import sessionmaker
-from colorama import Fore
+from collections import Counter
 
 from databaseClasses import *
 from values import *
 from scraper import *
+from addRow import *
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '../../keys/googleCloudKey.json'
+
+def initLogger():
+    # Create a logger object
+    logger = logging.getLogger()
+
+    # Set the logger level to INFO
+    logger.setLevel(logging.INFO)
+
+    # Create a handler for writing log messages to a file
+    timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    file_handler = logging.FileHandler(f"logs/app_{timestamp}.log")
+    file_handler.setLevel(logging.INFO)
+
+    # Create a handler for printing log messages to the console
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+
+    # Set a formatter for the log messages
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
+    # Add the handlers to the logger
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+    return logger
+
+# Start logging session
+exceptions = Counter() # class to track number of each exception instance
+logger = initLogger() # initialize logger
 
 def runner():
     """
     Main function of the program that runs the logic
     """
-    
+    # Register start time of the program
     startTime = dt.datetime.now()
     
-    print("Connecting to PostgreSQL...")
     # Establish connection to the database
+    logger.info("Connecting to PostgreSQL")
     connection = initPostgreSQL()
     if connection is None:
-        sys.exit(Fore.RED + "-> Could not connect to PostgreSQL")
+        logger.critical("Could not connect to PostgreSQL -> {e}")
     else:
-        print(Fore.GREEN + "-> Connected to PostgreSQL")
-        
+        logger.info("Connected to PostgreSQL")
+
     # Start session with connection
-    Session = sessionmaker(connection)
-    session = Session()
+    try:
+        Session = sessionmaker(connection)
+        session = Session()
+        logger.info("Session established")
+    except Exception as e:
+        logger.warning(e)
     
-    # Import leagues, think i will change this to get it from the PostgreSQL databse
+    # Import leagues from database
     leagues = session.query(Leagues).all()
     leagues = [league.__dict__ for league in leagues]
-    # remove unnecessary keys from the dictionaries
-    for league in leagues:
+    for league in leagues: # remove unnecessary keys from the dictionaries
         del league["_sa_instance_state"]
 
-    mExplored, mAdded, pExplored, pUpdated, pAdded = 0, 0, 0, 0, 0
-    for league in leagues:
-        print(Fore.MAGENTA + f"Updating {league['name']}" + Fore.WHITE)
+    trackData = Counter() # class to track explored, updated and added teams, matches and players
+    for league in leagues: # iterate over each league
+        logger.info(f"Updating {league['name']}")
+        exceptions[league["id"]] = Counter() # create specific Counter() for this league
         
+        # Get the fotmob links to all team in that league
         teams = get_team_links(league["id"], nTeams=league["n_teams"])
         
-        for team in teams:
+        for team in teams: # iterate over each team
             
-            urlName = team.split("/")
-            teamID = urlName[2]
-            urlName = urlName[len(urlName) - 1]
+            teamID = team.split("/")[2] # fotmob team id
+            urlName = team.split("/")[4] # how the team is spelled in the fotmob url
             
-            print(teamID, get_name(team))
-            
-            fixtures = get_match_links(teamID, urlName) # Gets a list of all matches for the team
-            players = get_player_links(teamID) # Gets a list of all players of the team
-        
+            # Get the fotmob links to all matches and players for the given team
+            fixtures = get_match_links(teamID, urlName)
+            players = get_player_links(teamID)
+
+            # Add the team if possible
             try:
-                teamSQL = Teams(id = teamID,
-                                name = get_name(team),
-                                stadium = "NA",
-                                league_id = league["id"])
+                pass
+                trackData["tExplored"] += 1
+                teamSQL = add_team(teamID, get_name(team), league["id"])
                 session.add(teamSQL)
                 session.commit()
+                trackData["tAdded"] += 1
             except Exception as e:
-                print(f"Could not add {get_name(team)} -> {e}")
-
+                exceptions[league["id"]][f"{type(e)} : {e}"] += 1
             
-            for fixture in fixtures:
+            for fixture in fixtures: # iterate over all matches found for the team
+                
                 # Gather info about that fixture
                 try:
                     matchStats, playerStats = get_match_info(fixture)
-                except:
+                    matchID = fixture.split("/")[2] # get match ID from fotmob
+                except Exception as e:
+                    exceptions[league["id"]][f"{type(e)} : {e}"] += 1
                     continue
                 
                 # Add match data to the database
                 try:
-                    match = Matches(id=fixture.split("/")[2],
-                                    home_team_id=matchStats["maininfo"]["homeID"], 
-                                    away_team_id=matchStats["maininfo"]["awayID"], 
-                                    league_id=matchStats["league"]["id"], 
-                                    date=matchStats["dtg"])
-                    
-                    homeSide = MatchStats(match_id = fixture.split("/")[2],
-                                          side = "home",
-                                          
-                                          total_shots = matchStats["statistics"]["shots"]["total shots"][0],
-                                          shots_off_target = matchStats["statistics"]["shots"]["off target"][0],
-                                          shots_on_target = matchStats["statistics"]["shots"]["on target"][0],
-                                          blocked_shots = matchStats["statistics"]["shots"]["blocked shot"][0],
-                                          hit_woodwork = matchStats["statistics"]["shots"]["hit woodwork"][0],
-                                          shots_inside_box = matchStats["statistics"]["shots"]["inside box"][0],
-                                          shots_outside_box = matchStats["statistics"]["shots"]["outside box"][0],
-                                          
-                                          xG_total = matchStats["statistics"]["xG"]["expected goals"][0],
-                                          xG_first_half = matchStats["statistics"]["xG"]["first half"][0],
-                                          xG_second_half = matchStats["statistics"]["xG"]["second half"][0],
-                                          xG_open_play = matchStats["statistics"]["xG"]["open play"][0],
-                                          xG_set_play = matchStats["statistics"]["xG"]["set play"][0],
-                                          xGOT = matchStats["statistics"]["xG"]["on target"][0],
-                                          
-                                          accurate_passes = matchStats["statistics"]["passes"]["accurate passes"][0],
-                                          accuracy = matchStats["statistics"]["passes"]["accurate passes"][1],
-                                          own_half = matchStats["statistics"]["passes"]["own half"][0],
-                                          opposition_half = matchStats["statistics"]["passes"]["opposition half"][0],
-                                          accurate_long_balls = matchStats["statistics"]["passes"]["accurate long balls"][0],
-                                          accurate_crosses = matchStats["statistics"]["passes"]["accurate crosses"][0],
-                                          throws = matchStats["statistics"]["passes"]["throws"][0],
-                                          
-                                          tackles_won = matchStats["statistics"]["defence"]["tackles won"][0],
-                                          accuracy_tackles = matchStats["statistics"]["defence"]["tackles won"][1],
-                                          interceptions = matchStats["statistics"]["defence"]["interceptions"][0],
-                                          blocks = matchStats["statistics"]["defence"]["blocks"][0],
-                                          clearances = matchStats["statistics"]["defence"]["clearances"][0],
-                                          keeper_saves = matchStats["statistics"]["defence"]["keeper saves"][0],
-                                          
-                                          yellow_cards = matchStats["statistics"]["cards"]["yellow cards"][0],
-                                          red_cards = matchStats["statistics"]["cards"]["red cards"][0],
-                                          
-                                          duels_won = matchStats["statistics"]["duels"]["duels won"][0],
-                                          ground_duels_won = matchStats["statistics"]["duels"]["ground duels"][0],
-                                          aerial_duels_won = matchStats["statistics"]["duels"]["aerial duels"][0],
-                                          successfull_dribbles = matchStats["statistics"]["duels"]["successfull dribbles"][0])
-                    
-                    awaySide = MatchStats(match_id = fixture.split("/")[2],
-                                          side = "away",
-                                          
-                                          total_shots = matchStats["statistics"]["shots"]["total shots"][1],
-                                          shots_off_target = matchStats["statistics"]["shots"]["off target"][1],
-                                          shots_on_target = matchStats["statistics"]["shots"]["on target"][1],
-                                          blocked_shots = matchStats["statistics"]["shots"]["blocked shot"][1],
-                                          hit_woodwork = matchStats["statistics"]["shots"]["hit woodwork"][1],
-                                          shots_inside_box = matchStats["statistics"]["shots"]["inside box"][1],
-                                          shots_outside_box = matchStats["statistics"]["shots"]["outside box"][1],
-                                          
-                                          xG_total = matchStats["statistics"]["xG"]["expected goals"][1],
-                                          xG_first_half = matchStats["statistics"]["xG"]["first half"][1],
-                                          xG_second_half = matchStats["statistics"]["xG"]["second half"][1],
-                                          xG_open_play = matchStats["statistics"]["xG"]["open play"][1],
-                                          xG_set_play = matchStats["statistics"]["xG"]["set play"][1],
-                                          xGOT = matchStats["statistics"]["xG"]["on target"][1],
-                                          
-                                          accurate_passes = matchStats["statistics"]["passes"]["accurate passes"][3],
-                                          accuracy = matchStats["statistics"]["passes"]["accurate passes"][4],
-                                          own_half = matchStats["statistics"]["passes"]["own half"][1],
-                                          opposition_half = matchStats["statistics"]["passes"]["opposition half"][1],
-                                          accurate_long_balls = matchStats["statistics"]["passes"]["accurate long balls"][3],
-                                          accurate_crosses = matchStats["statistics"]["passes"]["accurate crosses"][3],
-                                          throws = matchStats["statistics"]["passes"]["throws"][1],
-                                          
-                                          tackles_won = matchStats["statistics"]["defence"]["tackles won"][3],
-                                          accuracy_tackles = matchStats["statistics"]["defence"]["tackles won"][4],
-                                          interceptions = matchStats["statistics"]["defence"]["interceptions"][1],
-                                          blocks = matchStats["statistics"]["defence"]["blocks"][1],
-                                          clearances = matchStats["statistics"]["defence"]["clearances"][1],
-                                          keeper_saves = matchStats["statistics"]["defence"]["keeper saves"][1],
-                                          
-                                          yellow_cards = matchStats["statistics"]["cards"]["yellow cards"][1],
-                                          red_cards = matchStats["statistics"]["cards"]["red cards"][1],
-                                          
-                                          duels_won = matchStats["statistics"]["duels"]["duels won"][1],
-                                          ground_duels_won = matchStats["statistics"]["duels"]["ground duels"][3],
-                                          aerial_duels_won = matchStats["statistics"]["duels"]["aerial duels"][3],
-                                          successfull_dribbles = matchStats["statistics"]["duels"]["successfull dribbles"][3])
-                    
-                    session.add(match)
-                    session.add(homeSide)
-                    session.add(awaySide)
-                    session.commit()
-                    mAdded += 1
+                    trackData["mExplored"]
+                    match, homeSide, awaySide = add_match(matchID, matchStats)
+                    session.add(match) # add main info
+                    session.add(homeSide) # add home stats
+                    session.add(awaySide) # add away stats
+                    session.commit() # commit match
+                    trackData["mAdded"] += 1 # track match added
                 except Exception as e:
-                    print(f"Could not add match -> {e}")
+                    exceptions[league["id"]][f"{type(e)} : {e}"] += 1
                     
-                # Add player stats do database
-                for player in playerStats.keys():
+                # Add player performance stats do database
+                for player in playerStats.keys(): # iterate over all players returned from gather_player_performance()
                     try:
-                        playerPerformance = PlayerStats(player_id = playerStats[player]["id"],
-                                                        match_id = fixture.split("/")[2],
-                                                        
-                                                        rating = playerStats[player]["fotmob rating"],
-                                                        minutes_played = playerStats[player]["minutes played"],
-                                                        goals = playerStats[player]["goals"],
-                                                        assists = playerStats[player]["assits"],
-                                                        shots = playerStats[player]["shots"],
-                                                        passes = playerStats[player]["passes"].split("/")[0],
-                                                        passes_accuracy = int(playerStats[player]["passes"].split("/")[0] / playerStats[player]["passes"].split("/")[1]),
-                                                        chances_created = playerStats[player]["chances created"],
-                                                        touches = playerStats[player]["touches"],
-                                                        passes_into_final_third = playerStats[player]["passes into final thirds"],
-                                                        dispossesed = playerStats[player]["dispossesed"],
-                                                        tackles_won = playerStats[player]["tackles won"].split("/")[0],
-                                                        tackles_accuracy = int(playerStats[player]["tackles won"].split("/")[0] / playerStats[player]["tackles won"].split("/")[1]),
-                                                        recoveries = playerStats[player]["recoveries"],
-                                                        ground_duels_won = playerStats[player]["ground duels won"],
-                                                        aerial_duels_won = playerStats[player]["aerial duels won"],
-                                                        was_fouled = playerStats[player]["was fouled"],
-                                                        fouls_committed = playerStats[player]["fouls committed"])
+                        playerPerformance = add_player_performance(matchID, playerStats, player)
                         session.add(playerPerformance)
                         session.commit(playerPerformance)
                     except:
-                        print(f"Could not add {get_name(player)} -> {e}")
-            for player in players:
-                # 1 - Gather info about current player
+                        exceptions[league["id"]][f"{type(e)} : {e}"] += 1
+                        
+            for player in players: # iterate over all players in the team
+                
                 try:
-                    pExplored += 1
-                    stats = get_player_bio(player)
-                    name = get_name(player)
-                    playerSQL = Players(id = player.split("/")[2],
-                                    team_id = int(teamID),
-                                    name = name,
-                                    age = int(stats["bio"]["Age"]),
-                                    country = stats["bio"]["Country"],
-                                    height = int(stats["bio"]["Height"]),
-                                    market_val = stats["bio"]["Market"],
-                                    preffered_foot = stats["bio"]["foot"],
-                                    primary_postition = stats["bio"]["position"],
-                                    played = int(stats["season"]["Matches"]),
-                                    goals = int(stats["season"]["Goals"]),
-                                    assists = int(stats["season"]["Assists"]),
-                                    rating = float(stats["season"]["FotMob"]))
-                    session.add(playerSQL)
-                    session.commit()
-                    pAdded += 1
+                    trackData["pExplored"] += 1 # update number of explored players
+                    playerBio = add_player_bio(player.split("/")[2], teamID, get_name(player), get_player_bio(player))
+                    session.add(playerBio) # add player
+                    session.commit() # commit player to databse
+                    trackData["pAdded"] += 1 # keep track of players added
                 except Exception as e:
-                    print(f"Could not add {get_name(player)} -> {e}")
+                    exceptions[league["id"]][f"{type(e)} : {e}"] += 1
+                    
+        # Log error messages that occoured in the league
+        if exceptions[league["id"]].items(): # check for any exceptions
+            logger.info(f"Exceptions for {league['name']}:") 
+            for error, count in exceptions[league["id"]].items(): # iterate over all exceptions
+                logger.error(f"    {error}   ->  {count}") # log each exception
     
     # Get the end time of the data gathering
     session.close()
     endTime = dt.datetime.now()
     
-    # For test purposes only
-    dictionary = {
-        "mExplored" : mExplored,
-        "mAdded" : mAdded,
-        "pExplored" : pExplored,
-        "pUpdated" : pUpdated,
-        "pAdded" : pAdded
-    }
-    
     # Create a report of the writer.py execution
-    createReport(startTime, endTime, dictionary)
+    try:
+        createReport(startTime, endTime, trackData)
+    except:
+        logger.error("Could not create report")
+        print(startTime, endTime, trackData)
     
     # Exit program after successful execution
-    sys.exit(Fore.GREEN + "writer.py successfully run in a time of " + str(endTime - startTime))
-            
-                
+    logger.info(f"Successfully run in a time of {str(endTime - startTime)}")
+ 
+  
 def initPostgreSQL():
     """
     Connects and initializes PostgreSQL
@@ -269,10 +190,9 @@ def initPostgreSQL():
             "postgresql+pg8000://",
             creator=getConnection,
         )
-        #connection = engine.connect()
         return engine
     except Exception as e: # Connection failed
-        print(f"Error: {e}")
+        logger.critical(e)
         return None
 
 def loadJSON(path):
@@ -281,7 +201,7 @@ def loadJSON(path):
     """
     return json.load(open(path))
 
-def createReport(start, end, report):
+def createReport(start, end, report, test=False):
     """
     Creates reports with information about the execution.
     Saves report as a .txt file and adds to SQLdatabase.
@@ -292,11 +212,13 @@ def createReport(start, end, report):
     Time started: {start}
     Time ended: {end}
     Time delta: {end - start}
-    Matches explored: {report.get("mExplored")}
-    Matches added: {report.get("mAdded")}
-    Players explored: {report.get("pExplored")}
-    Players updated: {report.get("pUpdated")}
-    Players added: {report.get("pAdded")}
+    Teams explored: {report.get("tExplored", 0)}
+    Teams added: {report.get("tAdded", 0)}
+    Matches explored: {report.get("mExplored", 0)}
+    Matches added: {report.get("mAdded", 0)}
+    Players explored: {report.get("pExplored", 0)}
+    Players updated: {report.get("pUpdated", 0)}
+    Players added: {report.get("pAdded", 0)}
     -------------------
     """
     
@@ -306,13 +228,12 @@ def createReport(start, end, report):
     filename = f"report {formattedDate}.txt"
     
     # Create and write to file
-    with open(os.path.join("reports", filename), "w") as f:
-        f.write(reportContent)
+    if not test:
+        with open(os.path.join("reports", filename), "w") as f:
+            f.write(reportContent)
     
-    # Confirm that the report was created
-    print(f"Report saved as {filename}")
-    
-    # TODO: Add report to SQL database
+    # Confirm that the report was created by returning filename
+    logger.info(f"Report saved as {filename}")
 
 if __name__ == "__main__":
     runner()
