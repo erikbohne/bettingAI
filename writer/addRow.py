@@ -111,19 +111,19 @@ def add_player_performance(match_id, playerStats, player):
                                     rating = playerStats[player]["fotmob rating"],
                                     minutes_played = playerStats[player]["minutes played"],
                                     goals = playerStats[player]["goals"],
-                                    assists = playerStats[player]["assits"],
+                                    assists = playerStats[player]["assists"],
                                     shots = playerStats[player]["shots"],
                                     passes = playerStats[player]["passes"].split("/")[0],
-                                    passes_accuracy = int(playerStats[player]["passes"].split("/")[0] / playerStats[player]["passes"].split("/")[1]),
+                                    passes_accuracy = int(float(playerStats[player]["passes"].split("/")[0]) / float(playerStats[player]["passes"].split("/")[1])),
                                     chances_created = playerStats[player]["chances created"],
                                     touches = playerStats[player]["touches"],
-                                    passes_into_final_third = playerStats[player]["passes into final thirds"],
-                                    dispossesed = playerStats[player]["dispossesed"],
+                                    passes_into_final_third = playerStats[player]["passes into final third"],
+                                    dispossesed = playerStats[player]["dispossessed"],
                                     tackles_won = playerStats[player]["tackles won"].split("/")[0],
-                                    tackles_accuracy = int(playerStats[player]["tackles won"].split("/")[0] / playerStats[player]["tackles won"].split("/")[1]),
+                                    tackles_accuracy = int(float(playerStats[player]["tackles won"].split("/")[0]) / float(playerStats[player]["tackles won"].split("/")[1])),
                                     recoveries = playerStats[player]["recoveries"],
-                                    ground_duels_won = playerStats[player]["ground duels won"],
-                                    aerial_duels_won = playerStats[player]["aerial duels won"],
+                                    ground_duels_won = playerStats[player]["ground duels won"].split("/")[0],
+                                    aerial_duels_won = playerStats[player]["aerial duels won"].split("/")[0],
                                     was_fouled = playerStats[player]["was fouled"],
                                     fouls_committed = playerStats[player]["fouls committed"])
     
@@ -144,3 +144,5 @@ def add_player_bio(playerID, teamID, name, stats):
                         goals = int(stats["season"]["Goals"]),
                         assists = int(stats["season"]["Assists"]),
                         rating = float(stats["season"]["FotMob"]))
+    
+    return playerBio

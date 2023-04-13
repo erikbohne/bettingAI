@@ -124,8 +124,6 @@ def get_match_info(url):
     
     # Get competition name and id
     league = gather_league(tokenized[10:100])
-    if league["id"] != "47":
-        return False
     
     # Block to get init stats from match
     mainInfo = gather_main_info(tokenized[:150])

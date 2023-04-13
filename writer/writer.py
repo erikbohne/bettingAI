@@ -78,6 +78,8 @@ def runner():
 
     trackData = Counter() # class to track explored, updated and added teams, matches and players
     for league in leagues: # iterate over each league
+        if league["id"] == 47:
+            continue
         logger.info(f"Updating {league['name']}")
         exceptions[league["id"]] = Counter() # create specific Counter() for this league
         
@@ -94,16 +96,16 @@ def runner():
             players = get_player_links(teamID)
 
             # Add the team if possible
-            try:
-                pass
-                trackData["tExplored"] += 1
-                teamSQL = add_team(teamID, get_name(team), league["id"])
-                session.add(teamSQL)
-                session.commit()
-                trackData["tAdded"] += 1
-            except Exception as e:
-                exceptions[league["id"]][f"{type(e)} : {e}"] += 1
-            
+            #try:
+            #    trackData["tExplored"] += 1
+            #    teamSQL = add_team(teamID, get_name(team), league["id"])
+            #    session.add(teamSQL)
+            #    session.commit()
+            #    trackData["tAdded"] += 1
+            #except Exception as e:
+            #    session.rollback()
+            #    exceptions[league["id"]][f"{type(e)} : {e}"] += 1
+
             for fixture in fixtures: # iterate over all matches found for the team
                 
                 # Gather info about that fixture
@@ -116,7 +118,7 @@ def runner():
                 
                 # Add match data to the database
                 try:
-                    trackData["mExplored"]
+                    trackData["mExplored"] += 1 # track matches explored
                     match, homeSide, awaySide = add_match(matchID, matchStats)
                     session.add(match) # add main info
                     session.add(homeSide) # add home stats
@@ -124,15 +126,20 @@ def runner():
                     session.commit() # commit match
                     trackData["mAdded"] += 1 # track match added
                 except Exception as e:
+                    session.rollback()
                     exceptions[league["id"]][f"{type(e)} : {e}"] += 1
                     
                 # Add player performance stats do database
                 for player in playerStats.keys(): # iterate over all players returned from gather_player_performance()
+                    continue
                     try:
+                        trackData["psExplored"] += 1
                         playerPerformance = add_player_performance(matchID, playerStats, player)
                         session.add(playerPerformance)
-                        session.commit(playerPerformance)
-                    except:
+                        session.commit()
+                        trackData["psAdded"] += 1
+                    except Exception as e:
+                        session.rollback()
                         exceptions[league["id"]][f"{type(e)} : {e}"] += 1
                         
             for player in players: # iterate over all players in the team
@@ -144,13 +151,17 @@ def runner():
                     session.commit() # commit player to databse
                     trackData["pAdded"] += 1 # keep track of players added
                 except Exception as e:
+                    session.rollback()
                     exceptions[league["id"]][f"{type(e)} : {e}"] += 1
+            
+            print(trackData)
                     
         # Log error messages that occoured in the league
         if exceptions[league["id"]].items(): # check for any exceptions
             logger.info(f"Exceptions for {league['name']}:") 
             for error, count in exceptions[league["id"]].items(): # iterate over all exceptions
-                logger.error(f"    {error}   ->  {count}") # log each exception
+                if count > 5: # ensure we dont record the error of trying to add something that is already there
+                    logger.error(f"    {error}   ->  {count}") # log each exception
     
     # Get the end time of the data gathering
     session.close()
@@ -216,6 +227,8 @@ def createReport(start, end, report, test=False):
     Teams added: {report.get("tAdded", 0)}
     Matches explored: {report.get("mExplored", 0)}
     Matches added: {report.get("mAdded", 0)}
+    Player stats explored: {report.get("psExplored", 0)}
+    Player stats added: {report.get("psAdded", 0)}
     Players explored: {report.get("pExplored", 0)}
     Players updated: {report.get("pUpdated", 0)}
     Players added: {report.get("pAdded", 0)}
