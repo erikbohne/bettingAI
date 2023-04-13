@@ -18,49 +18,79 @@ If you consistantly bet on outcomes that has an expected value of more than 0, y
 Betting AI project that includes gathering and processing data, training and tuning a model and predicting outcomes.
 
 ## Table of Contents
-1. [Installation](#installation)
-2. [Usage](#usage)
-3. [Modules](#modules)
-   - [Module 1 - Writer](#module-1---writer)
-   - [Module 2 - Trainer](#module-2---trainer)
-   - [Module 3 - Predictor](#module-3---predictor)
-   - [Module 4 - Interface](#module-4---interface)
-4. [Contributing](#contributing)
-5. [License](#license)
+- **[Installation](#installation)**
+- **[Usage](#usage)**
+- **[Modules](#modules)**
+  - **[Module 1 - Writer](#module-1---writer)**
+  - **[Module 2 - Trainer](#module-2---trainer)**
+  - **[Module 3 - Predictor](#module-3---predictor)**
+  - **[Module 4 - Interface](#module-4---interface)**
+- **[Contributing](#contributing)**
+- **[License](#license)**
 
 ## Installation
 
 ### Prerequisites
-Program uses mainly Python 3.X
+Program uses mainly Python 3.X, for each of the modules you will find a **requirements.txt**. Run the following command in each modules to install the neccesary libraries: 
 ```
-pip install requirements.txt
+pip install {module}/requirements.txt
 ```
 
 This will install all the necesarry packages for all modules in BettingAI
-```
-# For module 1 - writer
-BeautifulSoup
-requests
-datetime
-nltk
-time
 
-# For module 2 - predictor
-```
 
 ## Usage
+To get the full expirience of the Betting AI you are ment to use the **4** modules, in the correct order. Check out each module to see what they do, how they work and how they are ment to be used.
 
 ## Modules
 The project consists of **4** modules that each perform a specific tast in order to complete the BettingAI.
 
 ### Module 1 - Writer
-> Extracting data from fotmob.com into a Google firebase database
+> Extracting data from fotmob.com into a PostgreSQL databse using Google Cloud.
 
-In order to collect data about teams, players and matches without spending thousands of NOK on an API, crawling the web was the best option. **Fotmob.com** is one of the leading fotball statistics website and was therefor an easy choice to scrape.
+In order to collect data about teams, players and matches without spending thousands of NOK on an API, crawling the web was the best option. **fotmob.com** is one of the leading fotball statistics website and was therefor a solid choice.
 
-The **structure of the firebase** has been changed a lot.
+The writer module consists of the following directories, main- and helper files:
+```
+# directories
+reports/ # dir that stores reports
+logs/ # dir that stores logs
 
-*TODO*
+# main files
+writer.py # main file that runs the module
+scraper.py # request and control scraping
+gather.py # scrapes a promted page
+
+# helper files
+databaseClasses.py # contains classes for database
+addRow.py # assigns values to a database class
+testFunctions.py # test all functions in writer.py, scraper.py and gather.py
+values.py # stores some values used in scraper.py
+```
+
+To run the module you only have to run writer.py and the main functionalities of the program will work itself through all the leagues like this:
+
+```
+fetch all leagues from db
+
+for each league:
+
+    get a list of all the teams
+    find all matches and players for that team
+
+    for each match that is not in the db:
+        add statistics to db
+
+    for each player that is not up to date:
+        update player information
+```
+
+Each step that includes getting statistics or links utilizes scraper.py to find this information on fotmob.com in a cooperation between writer, scraper and gather.
+
+```
+writer.py -> scraper.py -> gather.py
+```
+
 
 ### Module 2 - Trainer
 > Uses the historical data in the firebase databse to train a model
