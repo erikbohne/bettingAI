@@ -76,6 +76,9 @@ class PlayerStats(Base):
     was_fouled = Column(Integer)
     fouls_committed = Column(Integer)
     
+    # Ensure player_id and match_id only can appear once together in the table
+    __table_args__ = (UniqueConstraint("player_id", "match_id", name="unique_player_match_in_playerstats"),)
+    
 class Matches(Base):
     __tablename__ = "matches"
     id = Column(Integer, primary_key=True)
@@ -83,6 +86,9 @@ class Matches(Base):
     away_team_id = Column(Integer, ForeignKey('teams.id'))
     league_id = Column(Integer, ForeignKey('leagues.id'))
     date = Column(TIMESTAMP, nullable=False)
+    home_goals = Column(Integer)
+    away_goals = Column(Integer)
+    
     playerstats = relationship("PlayerStats", back_populates="match")
     matchstats = relationship("MatchStats", back_populates="match")
         
