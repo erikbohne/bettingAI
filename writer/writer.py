@@ -16,37 +16,6 @@ from addRow import *
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '../../keys/googleCloudKey.json'
 
-def initLogger():
-    # Create a logger object
-    logger = logging.getLogger()
-
-    # Set the logger level to INFO
-    logger.setLevel(logging.INFO)
-
-    # Create a handler for writing log messages to a file
-    timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    file_handler = logging.FileHandler(f"logs/app_{timestamp}.log")
-    file_handler.setLevel(logging.INFO)
-
-    # Create a handler for printing log messages to the console
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-
-    # Set a formatter for the log messages
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    file_handler.setFormatter(formatter)
-    console_handler.setFormatter(formatter)
-
-    # Add the handlers to the logger
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
-
-    return logger
-
-# Start logging session
-exceptions = Counter() # class to track number of each exception instance
-logger = initLogger() # initialize logger
-
 def runner():
     """
     Main function of the program that runs the logic
@@ -78,7 +47,7 @@ def runner():
 
     trackData = Counter() # class to track explored, updated and added teams, matches and players
     for league in leagues: # iterate over each league
-        if league["id"] == 47:
+        if league["id"] != 59:
             continue
         logger.info(f"Updating {league['name']}")
         exceptions[league["id"]] = Counter() # create specific Counter() for this league
@@ -124,6 +93,7 @@ def runner():
                     session.add(homeSide) # add home stats
                     session.add(awaySide) # add away stats
                     session.commit() # commit match
+                    print(f"added -> {matchStats['maininfo']['hometeam']} - {matchStats['maininfo']['awayteam']}")
                     trackData["mAdded"] += 1 # track match added
                 except Exception as e:
                     session.rollback()
@@ -131,7 +101,6 @@ def runner():
                     
                 # Add player performance stats do database
                 for player in playerStats.keys(): # iterate over all players returned from gather_player_performance()
-                    continue
                     try:
                         trackData["psExplored"] += 1
                         playerPerformance = add_player_performance(matchID, playerStats, player)
@@ -143,7 +112,7 @@ def runner():
                         exceptions[league["id"]][f"{type(e)} : {e}"] += 1
                         
             for player in players: # iterate over all players in the team
-                
+                continue
                 try:
                     trackData["pExplored"] += 1 # update number of explored players
                     playerBio = add_player_bio(player.split("/")[2], teamID, get_name(player), get_player_bio(player))
@@ -176,7 +145,34 @@ def runner():
     
     # Exit program after successful execution
     logger.info(f"Successfully run in a time of {str(endTime - startTime)}")
- 
+    
+
+def initLogger():
+    # Create a logger object
+    logger = logging.getLogger()
+
+    # Set the logger level to INFO
+    logger.setLevel(logging.INFO)
+
+    # Create a handler for writing log messages to a file
+    timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    file_handler = logging.FileHandler(f"logs/app_{timestamp}.log")
+    file_handler.setLevel(logging.INFO)
+
+    # Create a handler for printing log messages to the console
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+
+    # Set a formatter for the log messages
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
+    # Add the handlers to the logger
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+    return logger 
   
 def initPostgreSQL():
     """
@@ -249,4 +245,10 @@ def createReport(start, end, report, test=False):
     logger.info(f"Report saved as {filename}")
 
 if __name__ == "__main__":
+    
+    # Start logging session
+    exceptions = Counter() # class to track number of each exception instance
+    logger = initLogger() # initialize logger
+    
+    # Run program
     runner()
