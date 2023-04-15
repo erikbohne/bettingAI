@@ -16,7 +16,9 @@ def add_match(id, matchStats):
                     home_team_id = matchStats["maininfo"]["homeID"], 
                     away_team_id = matchStats["maininfo"]["awayID"], 
                     league_id = matchStats["league"]["id"], 
-                    date = matchStats["dtg"])
+                    date = matchStats["dtg"],
+                    home_goals = matchStats["maininfo"]["homescore"],
+                    away_goals = matchStats["maininfo"]["awayscore"])
                     
     # home side statistics
     homeSide = MatchStats(match_id = id,
