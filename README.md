@@ -95,6 +95,59 @@ writer.py -> scraper.py -> gather.py
 ### Module 2 - Trainer
 > Uses the historical data in the firebase databse to train a model
 
+There are some important steps before actually creating the model. Those include data processing and feature engineering. First of all, i want to be sure that the data i am going to use is complete and correct. This means that any missing values or duplicate entries must be removed. Furthermore we want to extract certain features based on the data. We have to both identify the features we already have present as well as creating new features based on the data that could be more informative to the model.
+
+The input values are prepared through the processing and feature engineering. And after this process the input will look like this:
+```
+Statistics:
+    - Average goals scored per match
+    - Average goals conceded per match
+    - Goal difference per match
+    - Total wins, draws, and losses
+    - Clean sheet percentage
+
+Player info:
+    - MVP score (based on importancy ranking)
+    - Average player rating
+    - Average player age
+    - Average player height
+    - Average player market value
+
+Recent form:
+    - Points won ratio in last 3, 5 and 10 matches
+    - Current winning/losing streak
+    - Home/away form
+    - Average goals scored in last 3, 5, and 10 matches
+    - Average goals conceded in last 3, 5, and 10 matches
+    - Both teams to score (BTTS) percentage in last 3, 5, and 10 matches
+    - Clean sheet percentage in last 3, 5, and 10 matches
+    - Over/Under 2.5 goals percentage in last 3, 5, and 10 matches
+    - Form against top/bottom half teams in the league
+    - Points won against direct competitors (teams with similar league positions)
+    - Win percentage with/without key players in recent matches
+    - Scoring patterns (e.g., early/late goals, comebacks, goals after conceding)
+    - Average cards (yellow and red) in last 3, 5, and 10 matches
+    - Average fouls in last 3, 5, and 10 matches
+    - Average corners in last 3, 5, and 10 matches
+    - Set piece goals scored (free kicks, corners, penalties) in last 3, 5, and 10 matches
+
+Head 2 Head:
+    - Outcome distribution (W%, D%, L%)
+    - Side distribution (H%, D%, A%)
+    - Most recent encounters (Last 2 years)
+    - Average goals per match
+    - Average goals conceded per match
+    - Goal difference per match
+    - Both teams to score (BTTS) percentage
+    - Clean sheet percentage for each team
+    - Over/Under 2.5 goals percentage
+    - Winning/losing streak in head-to-head matches
+
+Playstyle:
+    - 
+```
+
+
 *TODO*
 
 ### Module 3 - Predictor
