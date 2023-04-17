@@ -8,19 +8,34 @@ from scraper import *
 # Testing functions from scraper.py
 print(Fore.CYAN + "scraper.py :")
 
+# Testing tokenize_page()
+try:
+    tokenize_page("https://www.fotmob.com/leagues/73/overview/europa-league")
+    print(Fore.GREEN + "    tokenize_page()")
+except Exception as e:
+    print(Fore.RED + f"    tokenize_page() -> {e}")
+    
 # Testing get_match_links()
 try:
-    get_match_links(9825, "arsenal") # Testing on team Arsenal
+    get_match_links("47", "2015-2016") # Testing premier league 2015-2016
+    get_match_links("53", "2016-2017") # Testing ligue 1 2016-2017
+    get_match_links("54", "2017-2018") # Testing bundesliga 2017-2018
     print(Fore.GREEN + "    get_match_links()")
-except:
-    print(Fore.RED + "  get_match_links()")
+except Exception as e:
+    print(Fore.RED + f"    get_match_links() -> {e}")
     
 # Testing get_player_links()
 try:
-    get_player_links(9825) # Testing on team Arsenal
-    print(Fore.GREEN + "    get_player_links()")
-except:
-    print(Fore.RED + "  get_player_links()")
+    IDs = [9825, 8634, 10249]
+    completed = 0
+    for teamID in IDs:
+        if len(get_player_links(teamID)) > 0: # Testing on teams
+            completed += 1
+        else:
+            raise ValueError("Returning empty list")
+    print(Fore.GREEN + f"    get_player_links() {completed}/{len(IDs)}")
+except Exception as e:
+    print(Fore.RED + f"    get_player_links() {completed}/{len(IDs)} -> {e}")
 
 # Testing get_match_info()
 try:

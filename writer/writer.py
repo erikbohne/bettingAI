@@ -9,12 +9,13 @@ from google.cloud.sql.connector import Connector
 from sqlalchemy.orm import sessionmaker
 from collections import Counter
 
+sys.path.append(os.path.join("..", "googleCloud"))
+from initPostgreSQL import initPostgreSQL
+
 from databaseClasses import *
 from values import *
 from scraper import *
 from addRow import *
-
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '../../keys/googleCloudKey.json'
 
 def runner():
     """
@@ -47,34 +48,61 @@ def runner():
 
     trackData = Counter() # class to track explored, updated and added teams, matches and players
     for league in leagues: # iterate over each league
-        if league["id"] != 59:
-            continue
         logger.info(f"Updating {league['name']}")
         exceptions[league["id"]] = Counter() # create specific Counter() for this league
         
+        # PART ONE: GET / UPDATE TEAM AND PLAYER INFO
         # Get the fotmob links to all team in that league
         teams = get_team_links(league["id"], nTeams=league["n_teams"])
+        teamIDs = [row.id for row in session.query(Teams.id).filter(Teams.league_id == league["id"]).all()]
         
         for team in teams: # iterate over each team
             
-            teamID = team.split("/")[2] # fotmob team id
-            urlName = team.split("/")[4] # how the team is spelled in the fotmob url
+            teamID = int(team.split("/")[2]) # fotmob team id
+            
+            if teamID not in teamIDs: # check if we already have the team in the database
+                # Add the team if possible
+                try:
+                    trackData["tExplored"] += 1
+                    teamSQL = add_team(teamID, get_name(team), league["id"])
+                    session.add(teamSQL)
+                    session.commit()
+                    trackData["tAdded"] += 1
+                except Exception as e:
+                    session.rollback()
+                    exceptions[league["id"]][f"{type(e)} : {e}"] += 1
+            
             
             # Get the fotmob links to all matches and players for the given team
-            fixtures = get_match_links(teamID, urlName)
             players = get_player_links(teamID)
+            try:
+                playerIDs = [row.id for row in session.query(Players.id).filter(Players.team_id == teamID).all()]
+            except sqlalchemy.exc.DatabaseError as e:
+                playerIDs = []
 
-            # Add the team if possible
-            #try:
-            #    trackData["tExplored"] += 1
-            #    teamSQL = add_team(teamID, get_name(team), league["id"])
-            #    session.add(teamSQL)
-            #    session.commit()
-            #    trackData["tAdded"] += 1
-            #except Exception as e:
-            #    session.rollback()
-            #    exceptions[league["id"]][f"{type(e)} : {e}"] += 1
-
+            for player in players: # iterate over all players in the team
+                
+                playerID = int(player.split("/")[2])
+                if playerID in playerIDs: # check if player already is listed for team
+                    continue
+                
+                try:
+                    trackData["pExplored"] += 1 # update number of explored players
+                    playerBio = add_player_bio(player.split("/")[2], teamID, get_name(player), get_player_bio(player))
+                    session.add(playerBio) # add player
+                    session.commit() # commit player to databse
+                    trackData["pAdded"] += 1 # keep track of players added
+                except Exception as e:
+                    print(f"{e} -> {playerID}")
+                    session.rollback()
+                    exceptions[league["id"]][f"{type(e)} : {e}"] += 1
+        continue
+         # PART TWO: GET MATCH INFO
+        seasons = SEASONS[league["year_span"]]
+        for season in seasons: # iterate over last ten seasons for the league
+            
+            fixtures = get_match_links(league["id"], season) # find all matches in that season
+            
             for fixture in fixtures: # iterate over all matches found for the team
                 
                 # Gather info about that fixture
@@ -110,18 +138,6 @@ def runner():
                     except Exception as e:
                         session.rollback()
                         exceptions[league["id"]][f"{type(e)} : {e}"] += 1
-                        
-            for player in players: # iterate over all players in the team
-                continue
-                try:
-                    trackData["pExplored"] += 1 # update number of explored players
-                    playerBio = add_player_bio(player.split("/")[2], teamID, get_name(player), get_player_bio(player))
-                    session.add(playerBio) # add player
-                    session.commit() # commit player to databse
-                    trackData["pAdded"] += 1 # keep track of players added
-                except Exception as e:
-                    session.rollback()
-                    exceptions[league["id"]][f"{type(e)} : {e}"] += 1
             
             print(trackData)
                     

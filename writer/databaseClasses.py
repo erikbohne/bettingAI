@@ -1,6 +1,5 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, TIMESTAMP
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, TIMESTAMP, UniqueConstraint
 from sqlalchemy.orm import relationship, declarative_base
-from sqlalchemy.schema import UniqueConstraint
 
 Base = declarative_base()
 
@@ -11,44 +10,44 @@ class Leagues(Base):
     country = Column(String, nullable=False)
     n_teams = Column(Integer, nullable=False)
     level = Column(Integer, nullable=False)
-    
+    year_span = Column(Integer, nullable=False)
+
     __table_args__ = (UniqueConstraint("id", "name", name="unique_league_in_leagues"),)
-    
+
 class Teams(Base):
     __tablename__ = "teams"
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     stadium = Column(String, nullable=False)
     league_id = Column(Integer, ForeignKey('leagues.id'))
-    
+
     __table_args__ = (UniqueConstraint("id", "name", name="unique_team_in_teams"),)
-        
+
 class Players(Base):
     __tablename__ = "players"
     id = Column(Integer, primary_key=True)
     team_id = Column(Integer, ForeignKey('teams.id'))
-    
+
     # Bio
     name = Column(String, nullable=False)
     age = Column(Integer, nullable=False)
     height = Column(Integer, nullable=False)
     country = Column(String, nullable=False)
     market_val = Column(String, nullable=False) # In Euro
-    preffered_foot = Column(String, nullable=False)
     primary_postition = Column(String, nullable=False)
-    
+
     # Season stats
     played = Column(Integer)
     goals = Column(Integer)
     assists = Column(Integer)
     rating = Column(Float)
-        
+
     # Relationships
     playerstats = relationship("PlayerStats", back_populates="player")
     team = relationship("Teams")
-        
+
     __table_args__ = (UniqueConstraint("id", "name", name = "unique_player_in_players"),)
-        
+
 class PlayerStats(Base):
     __tablename__ = "playerstats"
     id = Column(Integer, primary_key=True)
@@ -56,7 +55,7 @@ class PlayerStats(Base):
     match_id = Column(Integer, ForeignKey('matches.id'))
     player = relationship("Players", back_populates="playerstats")
     match = relationship("Matches", back_populates="playerstats")
-    
+
     rating = Column(Float)
     minutes_played = Column(Integer)
     goals = Column(Integer)
@@ -75,10 +74,10 @@ class PlayerStats(Base):
     aerial_duels_won = Column(Integer)
     was_fouled = Column(Integer)
     fouls_committed = Column(Integer)
-    
+
     # Ensure player_id and match_id only can appear once together in the table
     __table_args__ = (UniqueConstraint("player_id", "match_id", name="unique_player_match_in_playerstats"),)
-    
+
 class Matches(Base):
     __tablename__ = "matches"
     id = Column(Integer, primary_key=True)

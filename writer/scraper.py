@@ -64,17 +64,17 @@ def get_team_links(leagueID, nTeams=None):
             return teamUrls
     return teamUrls
 
-def get_match_links(teamID, teamUrlName):
+def get_match_links(leagueID, season):
     """
     Returns a list of all available matches in a given league
     """
     # Tokenize page
-    tokenized = tokenize_page(f"https://www.fotmob.com/teams/{teamID}/fixtures/")
+    tokenized = tokenize_page(f"https://www.fotmob.com/leagues/{leagueID}/overview/league?season={season}")
 
     # Find all the urls from the page
     matchUrls = list()
     for token in tokenized:
-        if token[:6] == "/match" and teamUrlName in token:
+        if token[:6] == "/match": # and teamUrlName in token
             matchUrls.append(token)
     
     # Remove duplicates links
@@ -108,10 +108,6 @@ def get_match_info(url):
     """
     # Request page
     tokenized = tokenize_page("https://www.fotmob.com" + url, match=True)
- 
-    # Set up lists
-    home_stats = []
-    away_stats = []
     
     # Get time and date of match
     dtg = gather_dtg(tokenized[:50])
@@ -149,7 +145,7 @@ def get_player_bio(url):
 
 def get_name(url):
     """
-    Return the full name of the player based on the player link
+    Return the full name of the player or team based on the link
     """
     # Get the last part of the link
     subNames = url.split("/")

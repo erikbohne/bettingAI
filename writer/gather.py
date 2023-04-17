@@ -318,20 +318,20 @@ def gather_player_bio(information):
     for i, info in enumerate(information):
         if info == "__NEXT_DATA__":
             information = information[i:]
-
+    
     # Find bio statistics
     bio = []
     for i, _ in enumerate(information[:100]):
-        if information[i] == "strPosShort":
+        if information[i] == "strPosShort" or information[i] == "primaryPosition":
             bio.append(information[i + 2])
             break
     
-    indicator, idx = ["position", "Height", "foot", "Age", "Country", "Shirt", "Market"], 1
+    indicator, idx = ["position", "Height", "Age", "Country", "Shirt", "Market"], 1
     for i, _ in enumerate(information):
         if information[i] == indicator[idx]: # TODO Make is so it can append both Strike and Centre back.
-            bio.append(information[i - 2] if idx < 3 else information[i - 1].replace(":", ""))
+            bio.append(information[i - 2] if idx < 2 else information[i - 1].replace(":", ""))
             idx += 1
-        if len(bio) == 7:
+        if len(bio) == 6:
             break
         
     # Create a dictionary with bio statistics
