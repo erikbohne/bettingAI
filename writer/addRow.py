@@ -9,13 +9,14 @@ def add_team(id, name, league_id, stadium="NA"):
     
     return team
 
-def add_match(id, matchStats):
+def add_match(id, season, matchStats):
     
     # main info
     match = Matches(id = id,
                     home_team_id = matchStats["maininfo"]["homeID"], 
                     away_team_id = matchStats["maininfo"]["awayID"], 
                     league_id = matchStats["league"]["id"], 
+                    season = season,
                     date = matchStats["dtg"],
                     home_goals = matchStats["maininfo"]["homescore"],
                     away_goals = matchStats["maininfo"]["awayscore"])
@@ -140,7 +141,6 @@ def add_player_bio(playerID, teamID, name, stats):
                         country = stats["bio"]["Country"],
                         height = int(stats["bio"]["Height"]),
                         market_val = stats["bio"]["Market"],
-                        preffered_foot = stats["bio"]["foot"],
                         primary_postition = stats["bio"]["position"],
                         played = int(stats["season"]["Matches"]),
                         goals = int(stats["season"]["Goals"]),

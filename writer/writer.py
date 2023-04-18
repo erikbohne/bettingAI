@@ -93,18 +93,21 @@ def runner():
                     session.commit() # commit player to databse
                     trackData["pAdded"] += 1 # keep track of players added
                 except Exception as e:
-                    print(f"{e} -> {playerID}")
                     session.rollback()
                     exceptions[league["id"]][f"{type(e)} : {e}"] += 1
-        continue
+                    
          # PART TWO: GET MATCH INFO
         seasons = SEASONS[league["year_span"]]
         for season in seasons: # iterate over last ten seasons for the league
+            logger.info(f"Begun on {season} season for {league['name']}")
             
             fixtures = get_match_links(league["id"], season) # find all matches in that season
+            fixtureIDs = [row.id for row in session.query(Matches.id).filter(Matches.league_id == league["id"] and Matches.season == season).all()] # find all matches already in the db
             
             for fixture in fixtures: # iterate over all matches found for the team
-                
+                if fixture in fixtureIDs:
+                    print("skipped")
+                    continue
                 # Gather info about that fixture
                 try:
                     matchStats, playerStats = get_match_info(fixture)
@@ -116,7 +119,7 @@ def runner():
                 # Add match data to the database
                 try:
                     trackData["mExplored"] += 1 # track matches explored
-                    match, homeSide, awaySide = add_match(matchID, matchStats)
+                    match, homeSide, awaySide = add_match(matchID, season, matchStats)
                     session.add(match) # add main info
                     session.add(homeSide) # add home stats
                     session.add(awaySide) # add away stats
@@ -248,8 +251,7 @@ def createReport(start, end, report, test=False):
     """
     
     # Decide filename
-    today = dt.datetime.now()
-    formattedDate = today.strftime("%d %B %Y").lower()
+    formattedDate = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     filename = f"report {formattedDate}.txt"
     
     # Create and write to file

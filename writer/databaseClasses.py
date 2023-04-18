@@ -84,6 +84,7 @@ class Matches(Base):
     home_team_id = Column(Integer, ForeignKey('teams.id'))
     away_team_id = Column(Integer, ForeignKey('teams.id'))
     league_id = Column(Integer, ForeignKey('leagues.id'))
+    season = Column(String, nullable=False)
     date = Column(TIMESTAMP, nullable=False)
     home_goals = Column(Integer)
     away_goals = Column(Integer)

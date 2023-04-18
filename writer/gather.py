@@ -183,14 +183,14 @@ def gather_match_statistics(information):
                 current = []
     
     # Put all xG stats in a dict
-    xG = {
-        "expected goals" : xG[0],
-        "first half" : xG[1],
-        "second half" : xG[2],
-        "open play" : xG[3],
-        "set play" : xG[4],
-        "penalty" : xG[5] if penalty else None,
-        "on target" : xG[5] if not penalty else xG[6]
+        xG = {
+        "expected goals": xG[0] if len(xG) > 0 else None,
+        "first half": xG[1] if len(xG) > 1 else None,
+        "second half": xG[2] if len(xG) > 2 else None,
+        "open play": xG[3] if len(xG) > 3 else None,
+        "set play": xG[4] if len(xG) > 4 else None,
+        "penalty": xG[5] if penalty else None if len(xG) > 5 else None,
+        "on target": xG[5] if not penalty and len(xG) > 5 else xG[6] if len(xG) > 6 else None,
     }
     
     # Find and gather passes statistics
@@ -329,7 +329,11 @@ def gather_player_bio(information):
     indicator, idx = ["position", "Height", "Age", "Country", "Shirt", "Market"], 1
     for i, _ in enumerate(information):
         if information[i] == indicator[idx]: # TODO Make is so it can append both Strike and Centre back.
-            bio.append(information[i - 2] if idx < 2 else information[i - 1].replace(":", ""))
+            diff = 2 if idx < 2 else 1
+            try: 
+                bio.append(information[i - diff].replace(":", ""))
+            except:
+                bio.append(0)
             idx += 1
         if len(bio) == 6:
             break
@@ -342,7 +346,11 @@ def gather_player_bio(information):
     indicator, idx = ["Matches", "Goals", "Assists", "FotMob"], 0
     for i, _ in enumerate(information):
         if information[i] == indicator[idx]:
-            season.append(information[i - 1])
+            try:
+                value = int(information[i - 1])
+                season.append(value)
+            except:
+               season.append(0)
             idx += 1
         if len(season) == 4:
             break

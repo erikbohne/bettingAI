@@ -2,8 +2,10 @@ import pandas as pd
 import sys
 import os
 from sqlalchemy import create_engine, text
-from writer import initPostgreSQL
 from colorama import Fore
+
+sys.path.append(os.path.join("..", "googleCloud"))
+from initPostgreSQL import initPostgreSQL
 
 def display_table_schema(table_name):
     query = text(f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name='{table_name}'")

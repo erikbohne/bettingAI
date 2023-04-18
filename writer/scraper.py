@@ -59,7 +59,7 @@ def get_team_links(leagueID, nTeams=None):
     
     if nTeams is not None:
         if len(teamUrls) != nTeams:
-            print(f"found {teamUrls} team Urls but there are {nTeams} in the league")
+            print(f"found {len(teamUrls)} team Urls but there are {nTeams} in the league")
         else:
             return teamUrls
     return teamUrls
