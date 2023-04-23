@@ -3,6 +3,7 @@ import sys
 
 sys.path.append(os.path.join("..", "writer"))
 from databaseClasses import *
+from helpers import euros_to_number
 
 from sqlalchemy.sql import func
 from sqlalchemy import and_, or_
@@ -180,3 +181,89 @@ def get_clean_sheet_rate(teamID, season, side, session):
     clean_sheet_rate = clean_sheet_count / len(team_matches)
 
     return clean_sheet_rate
+
+def get_average_player_rating(teamID, session):
+    """
+    Returns the average player rating for a team
+    """
+    # Fetch all player ratings from players in a team
+    playerRatings = [row.rating for row in session.query(Players).filter(Players.team_id == teamID).all()]
+    
+    return playerRatings
+    
+def get_average_player_age(teamID, session):
+    """
+    Returns the average player age for a team
+    """
+    # Fetch all players age from players in a team
+    playerAges = [row.age for row in session.query(Players).filter(Players.team_id == teamID).all()]
+    playerAges = [age for age in playerAges if age != 0]
+
+    return sum(playerAges) / len(playerAges)
+    
+def get_average_player_height(teamID, session):
+    """
+    Returns the average player height for a team
+    """
+    # Fetch all players height from players in a team
+    playerHeights = [row.height for row in session.query(Players).filter(Players.team_id == teamID).all()]
+    playerHeights = [height for height in playerHeights if height != 0]
+
+    return sum(playerHeights) / len(playerHeights)
+    
+def get_average_player_value(teamID, session):
+    """
+    Returns the average player market value for a team
+    """
+    # Fetch all players height from players in a team
+    playerVals = [row.market_val for row in session.query(Players).filter(Players.team_id == teamID).all()]
+    playerVals = [euros_to_number(value) for value in playerVals if value != 0]
+
+    return int(sum(playerVals) / len(playerVals))
+
+def get_outcome_streak(teamID, date, session):
+    """
+    Returns the winning/losing streak going in to a match
+    """
+    def get_outcome(match, team_id):
+        if match.home_team_id == team_id:
+            if match.home_goals > match.away_goals:
+                return 1
+            elif match.home_goals < match.away_goals:
+                return -1
+            else:
+                return 0
+        else:
+            if match.home_goals < match.away_goals:
+                return 1
+            elif match.home_goals > match.away_goals:
+                return -1
+            else:
+                return 0
+            
+    matches = session.query(Matches).filter(
+        or_(
+            Matches.home_team_id == teamID,
+            Matches.away_team_id == teamID
+        ),
+        Matches.date < date
+    ).order_by(Matches.date.desc()).all()
+
+    if len(matches) == 0:
+        return 0
+
+    streak = 0
+    current_outcome = get_outcome(matches[0], teamID)
+    if current_outcome == 0:
+            return 0
+
+    for match in matches:
+        print(match.date)
+        outcome = get_outcome(match, teamID)
+        print(outcome)
+        if outcome == current_outcome:
+            streak += outcome
+        else:
+            break
+
+    return streak

@@ -45,6 +45,12 @@ def main():
                 teamFeatures[f"{side}_{outcome}_rate"] = get_outcome_rate(team.id, season, side, outcome, session)
             teamFeatures[f"{side}_clean_sheet_rate"] = get_clean_sheet_rate(team.id, season, side, session)
         
+        # Get player statistics from
+        teamFeatures["avg_player_rating"] = get_average_player_rating()
+        teamFeatures["avg_player_age"] = get_average_player_age()
+        teamFeatures["avg_player_height"] = get_average_player_height()
+        teamFeatures["avg_player_value"] = get_average_player_value()
+        
         features.append(teamFeatures)
     
     for feature in features:
