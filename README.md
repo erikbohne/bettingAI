@@ -100,11 +100,12 @@ There are some important steps before actually creating the model. Those include
 The input values are prepared through the processing and feature engineering. And after this process the input will look like this:
 ```
 Statistics:
-    - Average goals scored per match
-    - Average goals conceded per match
-    - Goal difference per match
-    - Total wins, draws, and losses
-    - Clean sheet percentage
+    - Average goals scored per match (total/home/away)
+    - Average goals conceded per match (total/home/away)
+    - Goal difference per match (total/home/away)
+    - Total wins, draws, and losses (total/home/away)
+    - Clean sheet percentage (total/home/away)
+    - Matches with more than 2.5 goals score (total/home/away)
 
 Player info:
     - MVP score (based on importancy ranking)
