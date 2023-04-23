@@ -141,7 +141,7 @@ def add_player_bio(playerID, teamID, name, stats):
                         country = stats["bio"]["Country"],
                         height = int(stats["bio"]["Height"]),
                         market_val = stats["bio"]["Market"],
-                        primary_postition = stats["bio"]["position"],
+                        primary_position = stats["bio"]["position"],
                         played = int(stats["season"]["Matches"]),
                         goals = int(stats["season"]["Goals"]),
                         assists = int(stats["season"]["Assists"]),

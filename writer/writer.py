@@ -17,29 +17,10 @@ from values import *
 from scraper import *
 from addRow import *
 
-def runner():
+def runner(session):
     """
     Main function of the program that runs the logic
     """
-    # Register start time of the program
-    startTime = dt.datetime.now()
-    
-    # Establish connection to the database
-    logger.info("Connecting to PostgreSQL")
-    connection = initPostgreSQL()
-    if connection is None:
-        logger.critical("Could not connect to PostgreSQL -> {e}")
-    else:
-        logger.info("Connected to PostgreSQL")
-
-    # Start session with connection
-    try:
-        Session = sessionmaker(connection)
-        session = Session()
-        logger.info("Session established")
-    except Exception as e:
-        logger.warning(e)
-    
     # Import leagues from database
     leagues = session.query(Leagues).all()
     leagues = [league.__dict__ for league in leagues]
@@ -57,7 +38,7 @@ def runner():
         teamIDs = [row.id for row in session.query(Teams.id).filter(Teams.league_id == league["id"]).all()]
         
         for team in teams: # iterate over each team
-            
+            continue
             teamID = int(team.split("/")[2]) # fotmob team id
             
             if teamID not in teamIDs: # check if we already have the team in the database
@@ -95,18 +76,19 @@ def runner():
                 except Exception as e:
                     session.rollback()
                     exceptions[league["id"]][f"{type(e)} : {e}"] += 1
-                    
-         # PART TWO: GET MATCH INFO
+     
+        # PART TWO: GET MATCH INFO
         seasons = SEASONS[league["year_span"]]
         for season in seasons: # iterate over last ten seasons for the league
+
             logger.info(f"Begun on {season} season for {league['name']}")
             
             fixtures = get_match_links(league["id"], season) # find all matches in that season
-            fixtureIDs = [row.id for row in session.query(Matches.id).filter(Matches.league_id == league["id"] and Matches.season == season).all()] # find all matches already in the db
-            
+            fixtureIDs = [row.id for row in session.query(Matches.id).filter((Matches.league_id == league["id"]) & (Matches.season == season)).all()] # find all matches already in the db
+
             for fixture in fixtures: # iterate over all matches found for the team
-                if fixture in fixtureIDs:
-                    print("skipped")
+                fixtureID = int(fixture.split("/")[2])
+                if fixtureID in fixtureIDs:
                     continue
                 # Gather info about that fixture
                 try:
@@ -127,6 +109,7 @@ def runner():
                     print(f"added -> {matchStats['maininfo']['hometeam']} - {matchStats['maininfo']['awayteam']}")
                     trackData["mAdded"] += 1 # track match added
                 except Exception as e:
+                    print(e)
                     session.rollback()
                     exceptions[league["id"]][f"{type(e)} : {e}"] += 1
                     
@@ -141,8 +124,8 @@ def runner():
                     except Exception as e:
                         session.rollback()
                         exceptions[league["id"]][f"{type(e)} : {e}"] += 1
-            
             print(trackData)
+        
                     
         # Log error messages that occoured in the league
         if exceptions[league["id"]].items(): # check for any exceptions
@@ -150,6 +133,7 @@ def runner():
             for error, count in exceptions[league["id"]].items(): # iterate over all exceptions
                 if count > 5: # ensure we dont record the error of trying to add something that is already there
                     logger.error(f"    {error}   ->  {count}") # log each exception
+        break
     
     # Get the end time of the data gathering
     session.close()
@@ -268,5 +252,24 @@ if __name__ == "__main__":
     exceptions = Counter() # class to track number of each exception instance
     logger = initLogger() # initialize logger
     
+    # Register start time of the program
+    startTime = dt.datetime.now()
+    
+    # Establish connection to the database
+    logger.info("Connecting to PostgreSQL")
+    connection = initPostgreSQL()
+    if connection is None:
+        logger.critical("Could not connect to PostgreSQL -> {e}")
+    else:
+        logger.info("Connected to PostgreSQL")
+
+    # Start session with connection
+    try:
+        Session = sessionmaker(connection)
+        session = Session()
+        logger.info("Session established")
+    except Exception as e:
+        logger.warning(e)
+    
     # Run program
-    runner()
+    runner(session)

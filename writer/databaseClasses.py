@@ -34,7 +34,7 @@ class Players(Base):
     height = Column(Integer, nullable=False)
     country = Column(String, nullable=False)
     market_val = Column(String, nullable=False) # In Euro
-    primary_postition = Column(String, nullable=False)
+    primary_position = Column(String, nullable=False)
 
     # Season stats
     played = Column(Integer)

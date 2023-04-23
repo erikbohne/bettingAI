@@ -141,6 +141,7 @@ def get_player_bio(url):
     # Get player info
     playerInfo = gather_player_bio(tokenized)
     
+    print(playerInfo)
     return playerInfo
 
 def get_name(url):

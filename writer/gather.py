@@ -155,13 +155,13 @@ def gather_match_statistics(information):
 
     # Put all shots info in dict
     shots = {
-        "total shots" : shots[0],
-        "off target" : shots[1],
-        "on target" : shots[2],
-        "blocked shot" : shots[3],
-        "hit woodwork" : shots[4],
-        "inside box" : shots[5],
-        "outside box" : shots[6]
+        "total shots": shots[0] if len(shots) > 0 else None,
+        "off target": shots[1] if len(shots) > 1 else None,
+        "on target": shots[2] if len(shots) > 2 else None,
+        "blocked shot": shots[3] if len(shots) > 3 else None,
+        "hit woodwork": shots[4] if len(shots) > 4 else None,
+        "inside box": shots[5] if len(shots) > 5 else None,
+        "outside box": shots[6] if len(shots) > 6 else None
     }
 
     # Find all xG statistics
@@ -181,9 +181,9 @@ def gather_match_statistics(information):
                     start = i + 1
                     break
                 current = []
-    
+                
     # Put all xG stats in a dict
-        xG = {
+    xG = {
         "expected goals": xG[0] if len(xG) > 0 else None,
         "first half": xG[1] if len(xG) > 1 else None,
         "second half": xG[2] if len(xG) > 2 else None,
@@ -212,13 +212,13 @@ def gather_match_statistics(information):
             
     # Put all pass stats in a dict
     passes = {
-        "passes" : passes[0],
-        "accurate passes" : passes[1],
-        "own half" : passes[2],
-        "opposition half" : passes[3],
-        "accurate long balls" : passes[4],
-        "accurate crosses" : passes[5],
-        "throws" : passes[6]
+        "passes": passes[0] if len(passes) > 0 else None,
+        "accurate passes": passes[1] if len(passes) > 1 else None,
+        "own half": passes[2] if len(passes) > 2 else None,
+        "opposition half": passes[3] if len(passes) > 3 else None,
+        "accurate long balls": passes[4] if len(passes) > 4 else None,
+        "accurate crosses": passes[5] if len(passes) > 5 else None,
+        "throws": passes[6] if len(passes) > 6 else None
     }
     
     # Find and gather defence statistics
@@ -240,11 +240,11 @@ def gather_match_statistics(information):
     
     # Put all defence stats in a dict
     defence = {
-        "tackles won" : defence[0],
-        "interceptions": defence[1],
-        "blocks" : defence[2],
-        "clearances" : defence[3],
-        "keeper saves" : defence[4]
+        "tackles won": defence[0] if len(defence) > 0 else None,
+        "interceptions": defence[1] if len(defence) > 1 else None,
+        "blocks": defence[2] if len(defence) > 2 else None,
+        "clearances": defence[3] if len(defence) > 3 else None,
+        "keeper saves": defence[4] if len(defence) > 4 else None
     }
     
     # Find and gather duels stats
@@ -266,10 +266,10 @@ def gather_match_statistics(information):
     
     # Put all duel stats in a dict
     duels = {
-        "duels won" : duels[0],
-        "ground duels" : duels[1],
-        "aerial duels" : duels[2],
-        "successfull dribbles" : duels[3]
+        "duels won": duels[0] if len(duels) > 0 else None,
+        "ground duels": duels[1] if len(duels) > 1 else None,
+        "aerial duels": duels[2] if len(duels) > 2 else None,
+        "successfull dribbles": duels[3] if len(duels) > 3 else None
     }
     
     # Find and gather dicipline stats
@@ -282,8 +282,8 @@ def gather_match_statistics(information):
     
     # Put card stats in a dict
     cards = {
-        "yellow cards" : cards[0],
-        "red cards" : cards[1]
+        "yellow cards" : cards[0] if len(cards) > 0 else None,
+        "red cards" : cards[1]if len(cards) > 1 else None
     }
 
     return {
@@ -325,18 +325,30 @@ def gather_player_bio(information):
         if information[i] == "strPosShort" or information[i] == "primaryPosition":
             bio.append(information[i + 2])
             break
-    
-    indicator, idx = ["position", "Height", "Age", "Country", "Shirt", "Market"], 1
-    for i, _ in enumerate(information):
-        if information[i] == indicator[idx]: # TODO Make is so it can append both Strike and Centre back.
-            diff = 2 if idx < 2 else 1
-            try: 
-                bio.append(information[i - diff].replace(":", ""))
-            except:
-                bio.append(0)
-            idx += 1
-        if len(bio) == 6:
-            break
+        
+    if bio[0] == "Coach":
+        indicator, idx = ["position", "Age", "Country"], 1
+        for i, _ in enumerate(information):
+            if information[i] == indicator[idx]:
+                try: 
+                    bio.append(information[i - 1].replace(":", ""))
+                except:
+                    bio.append(0)
+                idx += 1
+            if len(bio) == 3:
+                break
+    else: 
+        indicator, idx = ["position", "Height", "Age", "Country", "Shirt", "Market"], 1
+        for i, _ in enumerate(information):
+            if information[i] == indicator[idx]:
+                diff = 2 if idx < 2 else 1
+                try: 
+                    bio.append(information[i - diff].replace(":", ""))
+                except:
+                    bio.append(0)
+                idx += 1
+            if len(bio) == 6:
+                break
         
     # Create a dictionary with bio statistics
     bio = {indicator[i] : bio[i] for i in range(len(bio))}
