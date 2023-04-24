@@ -14,3 +14,19 @@ def euros_to_number(input):
         amount *= 1_000
 
     return int(amount)
+
+def get_outcome(match, team_id):
+        if match.home_team_id == team_id:
+            if match.home_goals > match.away_goals:
+                return 1
+            elif match.home_goals < match.away_goals:
+                return -1
+            else:
+                return 0
+        else:
+            if match.home_goals < match.away_goals:
+                return 1
+            elif match.home_goals > match.away_goals:
+                return -1
+            else:
+                return 0
