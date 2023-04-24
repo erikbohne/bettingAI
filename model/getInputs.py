@@ -3,11 +3,11 @@ import sys
 
 sys.path.append(os.path.join("..", "writer"))
 from databaseClasses import *
-from helpers import euros_to_number
+from helpers import euros_to_number, get_outcome
 
 from sqlalchemy.sql import func
 from sqlalchemy import and_, or_
-
+from datetime import timedelta
 
 def get_average_goals_season(teamID, season, side, session):
     """
@@ -224,23 +224,7 @@ def get_average_player_value(teamID, session):
 def get_outcome_streak(teamID, date, session):
     """
     Returns the winning/losing streak going in to a match
-    """
-    def get_outcome(match, team_id):
-        if match.home_team_id == team_id:
-            if match.home_goals > match.away_goals:
-                return 1
-            elif match.home_goals < match.away_goals:
-                return -1
-            else:
-                return 0
-        else:
-            if match.home_goals < match.away_goals:
-                return 1
-            elif match.home_goals > match.away_goals:
-                return -1
-            else:
-                return 0
-            
+    """            
     matches = session.query(Matches).filter(
         or_(
             Matches.home_team_id == teamID,
@@ -258,12 +242,302 @@ def get_outcome_streak(teamID, date, session):
             return 0
 
     for match in matches:
-        print(match.date)
         outcome = get_outcome(match, teamID)
-        print(outcome)
         if outcome == current_outcome:
             streak += outcome
         else:
             break
 
     return streak
+
+# H2H
+def get_outcome_distribution(teamID, opponentID, date, session):
+    """
+    Returns an outcome distribution between two teams from all matches they've played together before the inputted date
+    """
+    matches = session.query(Matches).filter(
+        and_(
+            or_(
+                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
+                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
+            ),
+            Matches.date < date
+        )
+    ).all()
+
+    outcome_distribution = {"win": 0, "draw": 0, "loss": 0}
+
+    for match in matches:
+        outcome = get_outcome(match, teamID)
+
+        if outcome == 1:
+            outcome_distribution["win"] += 1
+        elif outcome == -1:
+            outcome_distribution["loss"] += 1
+        else:
+            outcome_distribution["draw"] += 1
+
+    total = sum(outcome_distribution[result] for result in outcome_distribution.keys())
+    for key in outcome_distribution.keys():
+        outcome_distribution[key] /= total
+        
+    return outcome_distribution
+
+def get_side_distribution(teamID, opponentID, date, session):
+    """
+    Returns the winning rate of teamID at home and away when playing against opponentID
+    """
+    matches = session.query(Matches).filter(
+        and_(
+            or_(
+                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
+                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
+            ),
+            Matches.date < date
+        )
+    ).all()
+
+    home_wins = 0
+    away_wins = 0
+    home_games = 0
+    away_games = 0
+    for match in matches:
+        if match.home_team_id == teamID:
+            home_games += 1
+            if match.home_goals > match.away_goals:
+                home_wins += 1
+        else:
+            away_games += 1
+            if match.home_goals < match.away_goals:
+                away_wins += 1
+
+    home_win_rate = home_wins / home_games if home_games > 0 else 0
+    away_win_rate = away_wins / away_games if away_games > 0 else 0
+
+    distribution = {
+        "home_win_rate": home_win_rate,
+        "away_win_rate": away_win_rate,
+    }
+
+    return distribution
+
+def get_recent_encounters(teamID, opponentID, date, session):
+    """
+    Returns the win rate for teamID against opponendID for the last two years
+    """
+    two_years_ago = date - timedelta(days=365*2)
+
+    matches = session.query(Matches).filter(
+        and_(
+            or_(
+                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
+                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
+            ),
+            Matches.date < date,
+            Matches.date >= two_years_ago,
+        )
+    ).all()
+
+    wins = 0
+    total_matches = len(matches)
+    for match in matches:
+        if match.home_team_id == teamID and match.home_goals > match.away_goals:
+            wins += 1
+        elif match.away_team_id == teamID and match.home_goals < match.away_goals:
+            wins += 1
+
+    win_rate = wins / total_matches if total_matches > 0 else 0
+
+    return win_rate
+
+def get_average_goals_per_match(teamID, opponentID, date, session):
+    """
+    Returns the average goals scored in matches between teamID and opponentID
+    """
+    matches = session.query(Matches).filter(
+        and_(
+            or_(
+                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
+                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
+            ),
+            Matches.date < date
+        )
+    ).all()
+
+    total_goals = 0
+    for match in matches:
+        total_goals += match.home_goals + match.away_goals
+
+    if len(matches) > 0:
+        average_goals_per_match = total_goals / len(matches)
+    else:
+        average_goals_per_match = 0
+
+    return average_goals_per_match
+
+def get_average_goals_conceded_per_match(teamID, opponentID, date, session):
+    """
+    Returns average goals conceded by teamID against opponentID 
+    """
+    matches = session.query(Matches).filter(
+        and_(
+            or_(
+                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
+                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
+            ),
+            Matches.date < date
+        )
+    ).all()
+
+    goals_conceded = 0
+    for match in matches:
+        if match.home_team_id == teamID:
+            goals_conceded += match.away_goals
+        else:
+            goals_conceded += match.home_goals
+
+    total_matches = len(matches)
+    average_goals_conceded = goals_conceded / total_matches if total_matches > 0 else 0
+
+    return average_goals_conceded
+
+def get_average_goals_difference_match(teamID, opponentID, date, session):
+    """
+    Returns the average goals scored in matches between teamID and opponentID seen in teamID's perspective
+    """
+    matches = session.query(Matches).filter(
+        and_(
+            or_(
+                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
+                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
+            ),
+            Matches.date < date
+        )
+    ).all()
+
+    total_goals_difference = 0
+    for match in matches:
+        if match.home_team_id == teamID:
+            total_goals_difference += match.home_goals - match.away_goals
+        else:
+            total_goals_difference += match.away_goals - match.home_goals
+
+    if len(matches) > 0:
+        average_goals_difference = total_goals_difference / len(matches)
+    else:
+        average_goals_difference = 0
+
+    return average_goals_difference
+
+def get_btts_rate(teamID, opponentID, date, session):
+    """
+    Returns the percentage of both teams to score (BTTS)
+    """
+    matches = session.query(Matches).filter(
+        and_(
+            or_(
+                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
+                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
+            ),
+            Matches.date < date
+        )
+    ).all()
+
+    btts_count = 0
+    for match in matches:
+        if match.home_goals > 0 and match.away_goals > 0:
+            btts_count += 1
+
+    num_matches = len(matches)
+    btts_rate = btts_count / num_matches * 100 if num_matches > 0 else 0
+
+    return btts_rate
+
+def get_clean_sheet_rate_h2h(teamID, opponentID, date, session):
+    """
+    Returns the clean sheet rate for teamID against opponentID
+    """
+    matches = session.query(Matches).filter(
+        and_(
+            or_(
+                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
+                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
+            ),
+            Matches.date < date
+        )
+    ).all()
+
+    clean_sheet_count = 0
+    for match in matches:
+        if match.home_team_id == teamID and match.away_goals == 0:
+            clean_sheet_count += 1
+        elif match.away_team_id == teamID and match.home_goals == 0:
+            clean_sheet_count += 1
+
+    num_matches = len(matches)
+    clean_sheet_rate = clean_sheet_count / num_matches * 100 if num_matches > 0 else 0
+
+    return clean_sheet_rate
+
+def get_over_under_2_5(teamID, opponentID, date, session):
+    """
+    Return the percentage of matches where total goals scored is more than 2.5
+    """
+    matches = session.query(Matches).filter(
+        and_(
+            or_(
+                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
+                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
+            ),
+            Matches.date < date
+        )
+    ).all()
+
+    over_2_5 = 0
+    for match in matches:
+        total_goals = match.home_goals + match.away_goals
+        if total_goals > 2.5:
+            over_2_5 += 1
+
+    total_matches = len(matches)
+    over_2_5_percentage = over_2_5 / total_matches * 100 if total_matches > 0 else 0
+
+    return over_2_5_percentage
+    
+def get_outcome_streak_h2h(teamID, opponentID, date, session):
+    """
+    Returns the winning/losing streak teamID against opponentID, going in to a match
+    """
+    matches = session.query(Matches).filter(
+        and_(
+            or_(
+                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
+                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
+            ),
+            Matches.date < date
+        )
+    ).order_by(Matches.date.desc()).all()
+
+    streak = 0
+    outcome = None
+
+    for match in matches:
+        if match.home_goals == match.away_goals:
+            streak = 0
+            break
+
+        if match.home_team_id == teamID:
+            won = match.home_goals > match.away_goals
+        else:
+            won = match.away_goals > match.home_goals
+
+        if outcome is None:
+            outcome = won
+            streak = 1
+        elif outcome == won:
+            streak += 1
+        else:
+            break
+
+    return streak if outcome else -streak
+    
