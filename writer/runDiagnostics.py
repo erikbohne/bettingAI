@@ -18,7 +18,7 @@ from addRow import *
 from scraper import get_match_links, get_player_links, get_player_bio
 from values import SEASONS
 
-def main(session):
+def main(session: sqlalchemy.orm.Session) -> None:
     
     # Gather a list of the league ids
     leagues = session.query(Leagues).all()

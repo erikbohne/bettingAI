@@ -7,14 +7,14 @@ from colorama import Fore
 sys.path.append(os.path.join("..", "googleCloud"))
 from initPostgreSQL import initPostgreSQL
 
-def display_table_schema(table_name):
+def display_table_schema(table_name: str) -> None:
     query = text(f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name='{table_name}'")
     with engine.connect() as connection:
         df = pd.read_sql_query(query, connection)
         print(f"Data for {table_name}:")
         print(df)
 
-def display_table_data(table_name):
+def display_table_data(table_name: str) -> None:
     query = text(f"SELECT * FROM {table_name}")
     with engine.connect() as connection:
         df = pd.read_sql_query(query, connection)
