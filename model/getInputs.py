@@ -182,6 +182,7 @@ def get_clean_sheet_rate(teamID, season, side, session):
 
     return clean_sheet_rate
 
+# Player info
 def get_average_player_rating(teamID, session):
     """
     Returns the average player rating for a team
@@ -189,7 +190,7 @@ def get_average_player_rating(teamID, session):
     # Fetch all player ratings from players in a team
     playerRatings = [row.rating for row in session.query(Players).filter(Players.team_id == teamID).all()]
     
-    return playerRatings
+    return sum(playerRatings) / len(playerRatings) if len(playerRatings) > 0 else 0
     
 def get_average_player_age(teamID, session):
     """
@@ -221,6 +222,44 @@ def get_average_player_value(teamID, session):
 
     return int(sum(playerVals) / len(playerVals))
 
+# Recent form
+def get_points_won_ratio(teamID, date, session):
+    """
+    Returns the points won ratio for teamID the last 3, 5 and 10 matches
+    """
+    matches = session.query(Matches).filter(
+        and_(
+            or_(Matches.home_team_id == teamID, Matches.away_team_id == teamID),
+            Matches.date < date
+        )
+    ).order_by(Matches.date.desc()).limit(10).all()
+
+    points_won = {3: 0, 5: 0, 10: 0}
+    match_count = {3: 0, 5: 0, 10: 0}
+
+    for index, match in enumerate(matches):
+        if match.home_team_id == teamID:
+            won = match.home_goals > match.away_goals
+            draw = match.home_goals == match.away_goals
+        else:
+            won = match.away_goals > match.home_goals
+            draw = match.away_goals == match.home_goals
+
+        points = 3 if won else 1 if draw else 0
+
+        for interval in [3, 5, 10]:
+            if index < interval:
+                points_won[interval] += points
+                match_count[interval] += 1
+
+    points_won_ratio = {}
+    for interval in [3, 5, 10]:
+        points_won_ratio[interval] = (
+            points_won[interval] / (3 * match_count[interval]) if match_count[interval] > 0 else 0
+        )
+
+    return points_won_ratio
+
 def get_outcome_streak(teamID, date, session):
     """
     Returns the winning/losing streak going in to a match
@@ -249,6 +288,42 @@ def get_outcome_streak(teamID, date, session):
             break
 
     return streak
+
+def get_home_away_form(teamID, side, date, session):
+    """
+    Returns the form from the last 5 home/away matches as wins/total
+    """
+    if side not in ["home", "away"]:
+        raise ValueError("Invalid side value. Accepted values are 'home' or 'away'.")
+
+    team_column = "home_team_id" if side == "home" else "away_team_id"
+    opponent_column = "away_team_id" if side == "home" else "home_team_id"
+
+    matches = (
+        session.query(Matches)
+        .filter(
+            and_(
+                getattr(Matches, team_column) == teamID,
+                Matches.date < date
+            )
+        )
+        .order_by(Matches.date.desc())
+        .limit(5)
+        .all()
+    )
+
+    wins = 0
+    total_matches = len(matches)
+
+    for match in matches:
+        if side == "home" and match.home_goals > match.away_goals:
+            wins += 1
+        elif side == "away" and match.away_goals > match.home_goals:
+            wins += 1
+
+    win_rate = (wins / total_matches) if total_matches > 0 else 0
+
+    return win_rate
 
 # H2H
 def get_outcome_distribution(teamID, opponentID, date, session):
@@ -401,7 +476,7 @@ def get_average_goals_conceded_per_match(teamID, opponentID, date, session):
 
     return average_goals_conceded
 
-def get_average_goals_difference_match(teamID, opponentID, date, session):
+def get_average_goal_difference_match(teamID, opponentID, date, session):
     """
     Returns the average goals scored in matches between teamID and opponentID seen in teamID's perspective
     """
@@ -449,7 +524,7 @@ def get_btts_rate(teamID, opponentID, date, session):
             btts_count += 1
 
     num_matches = len(matches)
-    btts_rate = btts_count / num_matches * 100 if num_matches > 0 else 0
+    btts_rate = btts_count / num_matches if num_matches > 0 else 0
 
     return btts_rate
 
@@ -475,7 +550,7 @@ def get_clean_sheet_rate_h2h(teamID, opponentID, date, session):
             clean_sheet_count += 1
 
     num_matches = len(matches)
-    clean_sheet_rate = clean_sheet_count / num_matches * 100 if num_matches > 0 else 0
+    clean_sheet_rate = clean_sheet_count / num_matches if num_matches > 0 else 0
 
     return clean_sheet_rate
 
@@ -500,7 +575,7 @@ def get_over_under_2_5(teamID, opponentID, date, session):
             over_2_5 += 1
 
     total_matches = len(matches)
-    over_2_5_percentage = over_2_5 / total_matches * 100 if total_matches > 0 else 0
+    over_2_5_percentage = over_2_5 / total_matches if total_matches > 0 else 0
 
     return over_2_5_percentage
     
