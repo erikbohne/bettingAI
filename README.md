@@ -100,24 +100,24 @@ There are some important steps before actually creating the model. Those include
 The input values are prepared through the processing and feature engineering. And after this process the input will look like this:
 ```
 Statistics:
-    - Average goals scored per match (total/home/away)
-    - Average goals conceded per match (total/home/away)
-    - Goal difference per match (total/home/away)
-    - Total wins, draws, and losses (total/home/away)
-    - Clean sheet percentage (total/home/away)
+    - Average goals scored per match (total/home/away) ✅
+    - Average goals conceded per match (total/home/away) ✅
+    - Goal difference per match (total/home/away) ✅
+    - Total wins, draws, and losses (total/home/away) ✅
+    - Clean sheet percentage (total/home/away) ✅
     - Matches with more than 2.5 goals score (total/home/away)
 
 Player info:
     - MVP score (based on importancy ranking)
-    - Average player rating
-    - Average player age
-    - Average player height
-    - Average player market value
+    - Average player rating ✅
+    - Average player age ✅
+    - Average player height ✅
+    - Average player market value ✅
 
 Recent form:
-    - Points won ratio in last 3, 5 and 10 matches
-    - Current winning/losing streak
-    - Home/away form
+    - Points won ratio in last 3, 5 and 10 matches ✅
+    - Current winning/losing streak ✅
+    - Home/away form ✅
     - Average goals scored in last 3, 5, and 10 matches
     - Average goals conceded in last 3, 5, and 10 matches
     - Both teams to score (BTTS) percentage in last 3, 5, and 10 matches
@@ -133,16 +133,16 @@ Recent form:
     - Set piece goals scored (free kicks, corners, penalties) in last 3, 5, and 10 matches
 
 Head 2 Head:
-    - Outcome distribution (W%, D%, L%)
-    - Side distribution (H%, D%, A%)
-    - Most recent encounters (Last 2 years)
-    - Average goals per match
-    - Average goals conceded per match
-    - Goal difference per match
-    - Both teams to score (BTTS) percentage
-    - Clean sheet percentage for each team
-    - Over/Under 2.5 goals percentage
-    - Winning/losing streak in head-to-head matches
+    - Outcome distribution (W%, D%, L%) ✅
+    - Side distribution (H%, D%, A%) ✅
+    - Most recent encounters (Last 2 years) ✅
+    - Average goals per match ✅
+    - Average goals conceded per match ✅
+    - Goal difference per match ✅
+    - Both teams to score (BTTS) percentage ✅
+    - Clean sheet percentage for each team ✅
+    - Over/Under 2.5 goals percentage ✅
+    - Winning/losing streak in head-to-head matches ✅
 
 Playstyle:
     - 
