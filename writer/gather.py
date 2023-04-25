@@ -317,59 +317,49 @@ def gather_player_bio(information):
     # Find indexes for iteration
     for i, info in enumerate(information):
         if info == "__NEXT_DATA__":
-            information = information[i:]
-    
+            information = information[i:i + 200]
+
     # Find bio statistics
-    bio = []
+    bio = {}
     for i, _ in enumerate(information[:100]):
         if information[i] == "strPosShort" or information[i] == "primaryPosition":
-            bio.append(information[i + 2])
+            bio["position"] = information[i + 2]
+            information = information[i + 2:]
             break
         
-    if bio[0] == "Coach":
-        indicator, idx = ["position", "Age", "Country"], 1
-        for i, _ in enumerate(information):
-            if information[i] == indicator[idx]:
-                try: 
-                    bio.append(information[i - 1].replace(":", ""))
+    indicator = ["Height", "Age", "Country", "Shirt", "Market"]
+    for i, value in enumerate(information):
+        for ind in indicator:
+            if value == ind:
+                try:
+                    prev_value = information[i - 1].replace(":", "")
+                    if prev_value in bio.values():
+                        bio[ind] = information[i - 2].replace(":", "")
+                    else:
+                        bio[ind] = prev_value
                 except:
-                    bio.append(0)
-                idx += 1
-            if len(bio) == 3:
-                break
-    else: 
-        indicator, idx = ["position", "Height", "Age", "Country", "Shirt", "Market"], 1
-        for i, _ in enumerate(information):
-            if information[i] == indicator[idx]:
-                diff = 2 if idx < 2 else 1
-                try: 
-                    bio.append(information[i - diff].replace(":", ""))
-                except:
-                    bio.append(0)
-                idx += 1
-            if len(bio) == 6:
-                break
-        
-    # Create a dictionary with bio statistics
-    bio = {indicator[i] : bio[i] for i in range(len(bio))}
-    
+                    bio[ind] = 0
+
     # Find season statistics
     season = []
     indicator, idx = ["Matches", "Goals", "Assists", "FotMob"], 0
     for i, _ in enumerate(information):
         if information[i] == indicator[idx]:
             try:
-                value = int(information[i - 1])
+                value = int(information[i - 1].replace(":", ""))
                 season.append(value)
-            except:
-               season.append(0)
+            except ValueError:
+                value = float(information[i - 1].replace(":", ""))
+                season.append(value)
+            except Exception as e:
+                value
+                season.append(0)
             idx += 1
         if len(season) == 4:
             break
     
     # Create a dictionary with season stats
     season = {indicator[i] : season[i] for i in range(len(season))}
-
     return {"bio": bio, "season" : season}
 
 def gather_player_performance(information):

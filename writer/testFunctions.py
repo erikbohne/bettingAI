@@ -92,7 +92,7 @@ except Exception as e:
 # Testing gather_match_statistics()
 try:
     matchStats = gather_match_statistics(tokenize_page("https://www.fotmob.com/match/3901212/matchfacts/arsenal-vs-leeds-united", match=True)[:6000])
-    if matchStats == {'shots': {'total shots': ['13', '7'], 'off target': ['2', '1'], 'on target': ['6', '5'], 'blocked shot': ['5', '1'], 'hit woodwork': ['0', '0'], 'inside box': ['11', '6'], 'outside box': ['2', '1']}, 'xG': {'expected goals': ['3.78', '0.72'], 'first half': ['1.40', '0.17'], 'second half': ['2.38', '0.56'], 'open play': ['2.49', '0.72'], 'set play': ['0.50', '0.00'], 'penalty': ['0.79', '0.00'], 'on target': ['3.39', '0.48']}, 'passes': {'passes': ['636', '307'], 'accurate passes': ['544', '86', '%', '220', '72'], 'own half': ['227', '118'], 'opposition half': ['317', '102'], 'accurate long balls': ['21', '54', '%', '19', '40'], 'accurate crosses': ['6', '55', '%', '1', '10'], 'throws': ['14', '20']}, 'defence': {'tackles won': ['9', '60', '%', '12', '57'], 'interceptions': ['8', '13'], 'blocks': ['1', '6'], 'clearances': ['17', '13'], 'keeper saves': ['4', '1']}, 'duels': {'duels won': ['60', '50'], 'ground duels': ['40', '51', '%', '38', '49'], 'aerial duels': ['20', '63', '%', '12', '38'], 'successful dribbles': ['13', '50', '%', '6', '50']}, 'cards': {'yellow cards': ['0', '2'], 'red cards': ['0', '0']}}:
+    if matchStats == {'shots': {'total shots': ['13', '7'], 'off target': ['2', '1'], 'on target': ['6', '5'], 'blocked shot': ['5', '1'], 'hit woodwork': ['0', '0'], 'inside box': ['11', '6'], 'outside box': ['2', '1']}, 'xG': {'expected goals': ['3.78', '0.72'], 'first half': ['1.40', '0.17'], 'second half': ['2.38', '0.56'], 'open play': ['2.49', '0.72'], 'set play': ['0.50', '0.00'], 'penalty': ['0.79', '0.00'], 'on target': ['3.39', '0.48']}, 'passes': {'passes': ['636', '307'], 'accurate passes': ['544', '86', '%', '220', '72'], 'own half': ['227', '118'], 'opposition half': ['317', '102'], 'accurate long balls': ['21', '54', '%', '19', '40'], 'accurate crosses': ['6', '55', '%', '1', '10'], 'throws': ['14', '20']}, 'defence': {'tackles won': ['9', '60', '%', '12', '57'], 'interceptions': ['8', '13'], 'blocks': ['1', '6'], 'clearances': ['17', '13'], 'keeper saves': ['4', '1']}, 'duels': {'duels won': ['60', '50'], 'ground duels': ['40', '51', '%', '38', '49'], 'aerial duels': ['20', '63', '%', '12', '38'], 'successfull dribbles': ['13', '50', '%', '6', '50']}, 'cards': {'yellow cards': ['0', '2'], 'red cards': ['0', '0']}}:
         print(Fore.GREEN + "    gather_match_statistics()")
     else:
         raise ValueError("Wrong output")
@@ -101,6 +101,8 @@ except Exception as e:
     
 # Testing gather_player_bio()
 try:
+    playerBio = gather_player_bio(tokenize_page("https://www.fotmob.com/players/1129328"))
+    print(playerBio)
     playerBio = gather_player_bio(tokenize_page("https://www.fotmob.com/players/737066/erling-braut-haaland"))
     if playerBio['bio'] == {'position': 'CF', 'Height': '194', 'Age': '22', 'Country': 'Norway', 'Shirt': '9', 'Market': '€175M'}:
         print(Fore.GREEN + "    gather_player_bio()")

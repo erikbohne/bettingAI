@@ -27,12 +27,12 @@ def main(session):
     notInDatabase = {"matches" : {}, "players" : {}}
     
     for id, span in leagueIDs: # iterate over each league
-        
+        print(id)
         notInDatabase["matches"][id] = {}
         notInDatabase["players"][id] = {}
         
         for season in SEASONS[span]: # iterate through each season
-            
+            print(season)
             matches = [int(link.split("/")[2]) for link in get_match_links(id, season)]
             database = session.query(Matches).filter(and_(Matches.league_id == id, Matches.season == season))
             database = set([match.id for match in database])
@@ -41,7 +41,8 @@ def main(session):
             for match in matches:
                 if match not in database:
                     notInDatabase["matches"][id][season].append(match)
-        
+
+        continue
         teams = session.query(Teams).filter(Teams.league_id == id)
         teams = [team.id for team in teams]
         
@@ -56,7 +57,8 @@ def main(session):
                 if player not in database:
                     notInDatabase["players"][id][team][player] = str()
                     try:
-                        session.add(add_player_bio(player, team, "David Moyes", get_player_bio(f"/players/78626")))
+                        print(f"Trying to add {player}")
+                        session.add(add_player_bio(player, team, "test", get_player_bio(f"/players/{player}]")))
                         session.commit()
                     except Exception as e:
                         session.rollback()
@@ -65,10 +67,8 @@ def main(session):
                         print("".join(tb_str))
                         exit()
                         notInDatabase["players"][id][team][player] = e
-            
-            print(notInDatabase["players"][id][team])
     
-    print(notInDatabase["matches"][47]["2020-2021"])
+    print(notInDatabase["matches"][59])
             
             
     

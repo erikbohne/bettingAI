@@ -134,17 +134,17 @@ def add_player_performance(match_id, playerStats, player):
 
 def add_player_bio(playerID, teamID, name, stats):
     
-    playerBio = Players(id = playerID,
-                        team_id = int(teamID),
-                        name = name,
-                        age = int(stats["bio"]["Age"]),
-                        country = stats["bio"]["Country"],
-                        height = int(stats["bio"]["Height"]),
-                        market_val = stats["bio"]["Market"],
-                        primary_position = stats["bio"]["position"],
-                        played = int(stats["season"]["Matches"]),
-                        goals = int(stats["season"]["Goals"]),
-                        assists = int(stats["season"]["Assists"]),
-                        rating = float(stats["season"]["FotMob"]))
+    playerBio = Players(id=playerID,
+                        team_id=int(teamID),
+                        name=name if name else "NA",
+                        age=int(stats["bio"].get("Age")) if stats["bio"].get("Age") else 0,
+                        country=stats["bio"].get("Country") if stats["bio"].get("Country") else "NA",
+                        height=int(stats["bio"].get("Height")) if stats["bio"].get("Height") else 0,
+                        market_val=stats["bio"].get("Market") if stats["bio"].get("Market") else "NA",
+                        primary_position=stats["bio"].get("position") if stats["bio"].get("position") else "NA",
+                        played=int(stats["season"].get("Matches")) if stats["season"].get("Matches") else 0,
+                        goals=int(stats["season"].get("Goals")) if stats["season"].get("Goals") else 0,
+                        assists=int(stats["season"].get("Assists")) if stats["season"].get("Assists") else 0,
+                        rating=float(stats["season"].get("FotMob")) if stats["season"].get("FotMob") else 0.0)
     
     return playerBio

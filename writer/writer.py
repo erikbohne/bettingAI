@@ -38,7 +38,6 @@ def runner(session):
         teamIDs = [row.id for row in session.query(Teams.id).filter(Teams.league_id == league["id"]).all()]
         
         for team in teams: # iterate over each team
-            continue
             teamID = int(team.split("/")[2]) # fotmob team id
             
             if teamID not in teamIDs: # check if we already have the team in the database
@@ -62,7 +61,7 @@ def runner(session):
                 playerIDs = []
 
             for player in players: # iterate over all players in the team
-                
+                continue
                 playerID = int(player.split("/")[2])
                 if playerID in playerIDs: # check if player already is listed for team
                     continue
@@ -80,7 +79,6 @@ def runner(session):
         # PART TWO: GET MATCH INFO
         seasons = SEASONS[league["year_span"]]
         for season in seasons: # iterate over last ten seasons for the league
-
             logger.info(f"Begun on {season} season for {league['name']}")
             
             fixtures = get_match_links(league["id"], season) # find all matches in that season
@@ -133,7 +131,6 @@ def runner(session):
             for error, count in exceptions[league["id"]].items(): # iterate over all exceptions
                 if count > 5: # ensure we dont record the error of trying to add something that is already there
                     logger.error(f"    {error}   ->  {count}") # log each exception
-        break
     
     # Get the end time of the data gathering
     session.close()
@@ -176,34 +173,6 @@ def initLogger():
     logger.addHandler(console_handler)
 
     return logger 
-  
-def initPostgreSQL():
-    """
-    Connects and initializes PostgreSQL
-    """
-    # Import database creditations
-    creds = loadJSON("../../keys/postgreSQLKey.json")
-
-    def getConnection():
-        connector = Connector()
-        connection = connector.connect(
-            creds["connectionName"],
-            "pg8000",
-            user=creds["user"],
-            password=creds["password"],
-            db=creds["dbname"]
-        )
-        return connection
-    
-    try: # Try to connecto to database
-        engine = sqlalchemy.create_engine(
-            "postgresql+pg8000://",
-            creator=getConnection,
-        )
-        return engine
-    except Exception as e: # Connection failed
-        logger.critical(e)
-        return None
 
 def loadJSON(path):
     """
