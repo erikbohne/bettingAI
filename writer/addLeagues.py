@@ -9,7 +9,7 @@ from initPostgreSQL import initPostgreSQL
 from databaseClasses import *
 
 
-def add_leagues():
+def add_leagues() -> None:
     
     # Establish connection to the database
     connection = initPostgreSQL()

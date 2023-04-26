@@ -4,8 +4,10 @@ import json
 import logging
 import sqlalchemy
 import datetime as dt
+from typing import List, Optional, Dict
 
 from google.cloud.sql.connector import Connector
+from google.cloud.sql.connector.connection import Connection
 from sqlalchemy.orm import sessionmaker
 from collections import Counter
 
@@ -17,7 +19,7 @@ from values import *
 from scraper import *
 from addRow import *
 
-def runner(session):
+def runner(session: sqlalchemy.orm.Session) -> None:
     """
     Main function of the program that runs the logic
     """
@@ -147,7 +149,7 @@ def runner(session):
     logger.info(f"Successfully run in a time of {str(endTime - startTime)}")
     
 
-def initLogger():
+def initLogger() -> logging.Logger:
     # Create a logger object
     logger = logging.getLogger()
 
@@ -174,13 +176,13 @@ def initLogger():
 
     return logger 
 
-def loadJSON(path):
+def loadJSON(path: str) -> Dict:
     """
     Returns data from JSON file @ path
     """
     return json.load(open(path))
 
-def createReport(start, end, report, test=False):
+def createReport(start: dt.datetime, end: dt.datetime, report: Counter, test: Optional[bool] = False) -> None:
     """
     Creates reports with information about the execution.
     Saves report as a .txt file and adds to SQLdatabase.

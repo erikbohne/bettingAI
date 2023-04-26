@@ -4,20 +4,19 @@ Started on March 2nd 2023 @ 17:47
 Library that is created to scrape fotbmob.com to gather match info
 """
 
-# Import libraries
+import datetime
+from time import strptime
+from typing import List, Optional, Dict, Union, Any, Tuple
+
 from bs4 import BeautifulSoup
 import requests
-import datetime
-import datetime
-
 from nltk.tokenize import word_tokenize
-from time import strptime
 
 # My own libraries
 from values import *
 from gather import *
 
-def tokenize_page(url, match=False):
+def tokenize_page(url: str, match: Optional[bool] = False) -> List[str]:
     """
     Returns the tokens from the website
     """
@@ -42,7 +41,7 @@ def tokenize_page(url, match=False):
     
     return tokenized
 
-def get_team_links(leagueID, nTeams=None):
+def get_team_links(leagueID: int, nTeams: Optional[str] = None) -> List[str]:
     """
     Returns a list with all team links in a given league
     """
@@ -64,7 +63,7 @@ def get_team_links(leagueID, nTeams=None):
             return teamUrls
     return teamUrls
 
-def get_match_links(leagueID, season):
+def get_match_links(leagueID: int, season: str) -> List[str]:
     """
     Returns a list of all available matches in a given league
     """
@@ -82,7 +81,7 @@ def get_match_links(leagueID, season):
     
     return matchUrls
 
-def get_player_links(teamID):
+def get_player_links(teamID: int) -> List[str]:
     """
     Returns a list off all players in a team
     """
@@ -102,7 +101,7 @@ def get_player_links(teamID):
     
     return playerUrls
 
-def get_match_info(url):
+def get_match_info(url: str) -> Union[bool, Tuple[Dict[str, Any], Dict[Any, Any]]]:
     """
     Returns a dictionary of all information from the match
     """
@@ -131,7 +130,7 @@ def get_match_info(url):
     
     return {"dtg" : dtg, "league": league, "maininfo" : mainInfo, "statistics" : statistics}, playerPerformance
     
-def get_player_bio(url):  
+def get_player_bio(url: str) -> Dict[str, Union[Dict[str, Any], List]]:
     """
     Returns a dictionary with information from the player bio on fotmob.
     """
@@ -143,7 +142,7 @@ def get_player_bio(url):
     
     return playerInfo
 
-def get_name(url):
+def get_name(url: str) -> str:
     """
     Return the full name of the player or team based on the link
     """

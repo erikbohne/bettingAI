@@ -1,7 +1,9 @@
 import datetime as dt
+from typing import List, Optional, Dict, Union, Any
+
 from values import *
 
-def gather_dtg(information):
+def gather_dtg(information: List[str]) -> dt.datetime:
     """
     Returns time and date information from the match
     """
@@ -25,7 +27,7 @@ def gather_dtg(information):
     # Create a datetime object and return it
     return dt.datetime(year, month, day, hour, minute)
 
-def gather_league(information):
+def gather_league(information: List[str]) -> Dict[str, Any]:
     """
     Returns league name and id for competition
     """
@@ -42,7 +44,7 @@ def gather_league(information):
     except UnboundLocalError:
         return {"name" : None, "id" : None}
 
-def gather_main_info(information):
+def gather_main_info(information: List[str]) -> Dict[str, Any]:
     """
     Returns the initial match stats:
     * Home team name
@@ -86,7 +88,7 @@ def gather_main_info(information):
     
     return mainInfo
 
-def gather_match_statistics(information):
+def gather_match_statistics(information: List[str]) -> Dict[str, Any]:
     """
     Returns a dict with all the statistics from the match:
     - Shots:
@@ -295,7 +297,7 @@ def gather_match_statistics(information):
         "cards" : cards
     }
 
-def gather_player_bio(information):
+def gather_player_bio(information: List[str]) -> Dict[str, Union[Dict[str, Any], List]]:
     """
     Returns a dict with all the statistics from the match:
     
@@ -362,7 +364,7 @@ def gather_player_bio(information):
     season = {indicator[i] : season[i] for i in range(len(season))}
     return {"bio": bio, "season" : season}
 
-def gather_player_performance(information):
+def gather_player_performance(information: List[str]) -> Dict[str, Any]:
     """
     Gather player performance of each player from each team
     - Player:
