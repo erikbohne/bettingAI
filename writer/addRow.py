@@ -1,6 +1,8 @@
+from typing import Optional, Tuple, Mapping
+
 from databaseClasses import *
 
-def add_team(id, name, league_id, stadium="NA"):
+def add_team(id: int, name: str, league_id: int, stadium: Optional[str] = "NA") -> Teams:
     
     team = Teams(id = id,
                  name = name,
@@ -9,7 +11,7 @@ def add_team(id, name, league_id, stadium="NA"):
     
     return team
 
-def add_match(id, season, matchStats):
+def add_match(id: int, season: str, matchStats: Mapping) -> Tuple[Matches, MatchStats, MatchStats]:
     
     # main info
     match = Matches(id = id,
@@ -106,7 +108,7 @@ def add_match(id, season, matchStats):
     
     return match, homeSide, awaySide
 
-def add_player_performance(match_id, playerStats, player):
+def add_player_performance(match_id: int, playerStats: Mapping, player: str) -> PlayerStats:
     
     playerPerformance = PlayerStats(player_id = playerStats[player]["id"],
                                     match_id = match_id,
@@ -132,7 +134,7 @@ def add_player_performance(match_id, playerStats, player):
     
     return playerPerformance
 
-def add_player_bio(playerID, teamID, name, stats):
+def add_player_bio(playerID: int, teamID: int, name: str, stats: Mapping) -> Players:
     
     playerBio = Players(id=playerID,
                         team_id=int(teamID),
