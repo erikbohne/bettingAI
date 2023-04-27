@@ -334,7 +334,10 @@ def gather_player_bio(information: List[str]) -> Dict[str, Union[Dict[str, Any],
         for ind in indicator:
             if value == ind:
                 try:
-                    prev_value = information[i - 1].replace(":", "")
+                    if ind == "Height":
+                        prev_value = information[i - 2].replace(":", "")
+                    else:
+                        prev_value = information[i - 1].replace(":", "")
                     if prev_value in bio.values():
                         bio[ind] = information[i - 2].replace(":", "")
                     else:
@@ -400,24 +403,26 @@ def gather_player_performance(information: List[str]) -> Dict[str, Any]:
         if info == "lineup" and information[i + 1] == "lineup": # two lineup following each other is the start signal
             information = information[i:]
             break
+        
     playerInfo = ["Top", "rating", "played", "Goals", "Assists", "shots", "passes", "created", "Touches",
                   "third", "Dispossessed", "won", "Recoveries", "won", "won", "fouled", "committed"]
     playerStat = ["fotmob rating", "minutes played", "goals", "assists", "shots", "passes", "chances created",
                   "touches", "passes into final third", "dispossessed", "tackles won", "recoveries", "ground duels won",
                   "aerial duels won", "was fouled", "fouls committed"]
-    idx = 0 
     
     playerID = None # assign value before iteration
-    currPlayer = [] # to store current player stats
+    currentPlayer, idx = {}, 0 # to store current player stats
     onPlayer = False # to switch between to modes: gather stats or find new player
+
     for i, info in enumerate(information):
         
-        # Check if all info is gathered from current player
-        if len(currPlayer) == len(playerStat):
-            playerPerformance[playerName] = {playerStat[n] : currPlayer[n] for n in range(len(currPlayer))} # append the player stats to the performance dict
-            playerPerformance[playerName]["id"] = playerID
+        # Check if we are starting on a new player
+        if (info == "firstName" and onPlayer) or (len(currentPlayer.keys()) == len(playerStat) - 1):
+            if currentPlayer != {}:
+                playerPerformance[playerName] = currentPlayer
+                playerPerformance[playerName]["id"] = playerID
             onPlayer = False # mark the end of this player
-            currPlayer, idx = [], 0 # reset stats list and index
+            currentPlayer, idx = {}, 0 # reset stats list and index
         
         if onPlayer: # if in gather stats mode
             if info[:len("/players")] == "/players":
@@ -425,9 +430,9 @@ def gather_player_performance(information: List[str]) -> Dict[str, Any]:
             if info == playerInfo[idx]: # find current stat
                 if idx > 0:
                     if any(char.isdigit() for char in information[i + 1]):
-                        currPlayer.append(information[i + 1].replace(":", "")) # append the current stat and remove colon from number: ":2" -> "2"
+                        currentPlayer[playerStat[idx]] = information[i + 1].replace(":", "") # append the current stat and remove colon from number: ":2" -> "2"
                     else:
-                        currPlayer.append(None)
+                        currentPlayer[playerStat[idx]] = None
                 idx += 1 # next index value
         else: # if in find new player mode
             if info == "firstName": # gather the name of the player
@@ -437,6 +442,9 @@ def gather_player_performance(information: List[str]) -> Dict[str, Any]:
                                         information[i + n] for n in range(j) 
                                         if information[i + n] not in ["firstName", "lastName"]
                                             ])
+                        if playerName in playerPerformance.keys():
+                            pass
+                        playerPerformance[playerName] = {}
                         onPlayer = True # we are on a player and the following stats will belong to current player
                         break
                     
