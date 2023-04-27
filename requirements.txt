@@ -1,16 +1,9 @@
 sqlalchemy  >= 2.0.10
 colorama >= 0.4.6
 pandas >= 2.0.1
-
-# Please confirme that this is the correct library used in the project:
 cloud-sql-python-connector >= 1.2.2
-
-# There are two drivers that are supported for the Postgres dialect, which one of these two is used in the project?
-# cloud-sql-python-connector[pg8000]
-# cloud-sql-python-connector[asyncpg]
-
+cloud-sql-python-connector[pg8000] >= 1.2.2
 beautifulsoup4 >= 4.12.2
 requests >= 2.29.0
 nltk >= 3.8.1
 scikit-learn >= 1.2.2
-
