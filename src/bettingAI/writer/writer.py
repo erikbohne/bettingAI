@@ -9,7 +9,6 @@ from typing import List, Optional, Dict
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 from google.cloud.sql.connector import Connector
-from google.cloud.sql.connector.connection import Connection
 
 from bettingAI.googleCloud.initPostgreSQL import initPostgreSQL
 from bettingAI.writer.databaseClasses import *
