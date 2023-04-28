@@ -7,7 +7,6 @@ import datetime as dt
 from typing import List, Optional, Dict
 
 from google.cloud.sql.connector import Connector
-from google.cloud.sql.connector.connection import Connection
 from sqlalchemy.orm import sessionmaker
 from collections import Counter
 
