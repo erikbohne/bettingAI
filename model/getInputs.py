@@ -5,13 +5,12 @@ sys.path.append(os.path.join("..", "writer"))
 from databaseClasses import *
 from helpers import euros_to_number, get_outcome
 
-from sqlalchemy.sql import func
 from sqlalchemy import and_, or_
 from datetime import timedelta
 
-def get_average_goals_season(teamID, season, side, session):
+def get_average_goals_season(teamID, season, side, date, session):
     """
-    Returns average goals for a team in a given season based on the side (home or away)
+    Returns average goals for a team in a given season based on the side (home or away) before the inputted date
     """
     if side not in ["home", "away"]:
         raise ValueError(f"Invalid side argument '{side}'. Valid options are 'home' and 'away'")
@@ -19,16 +18,18 @@ def get_average_goals_season(teamID, season, side, session):
     # Filter matches based on the side
     team_side_filter = Matches.home_team_id == teamID if side == "home" else Matches.away_team_id == teamID
 
-    # Query all matches in which the team played during the specified season and side
+    # Query all matches in which the team played during the specified season and side before the inputted date
     team_matches = session.query(Matches).filter(
         and_(
             team_side_filter,
-            Matches.season == season
+            Matches.season == season,
+            Matches.date < date
         )
     ).all()
 
+    # If no previous matches found, return 0
     if len(team_matches) == 0:
-        raise ValueError(f"No {side} matches found for teamID = {teamID} and season = {season}")
+        return 0
 
     # Calculate the total goals scored by the team
     total_goals = sum(
@@ -41,7 +42,7 @@ def get_average_goals_season(teamID, season, side, session):
 
     return average_goals
 
-def get_average_conceded_season(teamID, season, side, session):
+def get_average_conceded_season(teamID, season, side, date, session):
     """
     Returns average conceded goals for a team in a given season based on the side (home or away)
     """
@@ -55,12 +56,13 @@ def get_average_conceded_season(teamID, season, side, session):
     team_matches = session.query(Matches).filter(
         and_(
             team_side_filter,
-            Matches.season == season
+            Matches.season == season,
+            Matches.date < date
         )
     ).all()
 
     if len(team_matches) == 0:
-        raise ValueError(f"No {side} matches found for teamID = {teamID} and season = {season}")
+        return 0
 
     # Calculate the total conceded goals by the team
     total_conceded_goals = sum(
@@ -73,7 +75,7 @@ def get_average_conceded_season(teamID, season, side, session):
 
     return average_conceded_goals
   
-def get_average_goaldiff_season(teamID, season, side, session):
+def get_average_goaldiff_season(teamID, season, side, date, session):
     """
     Returns average goal difference for a team in a given season based on the side (home or away)
     """
@@ -87,12 +89,13 @@ def get_average_goaldiff_season(teamID, season, side, session):
     team_matches = session.query(Matches).filter(
         and_(
             team_side_filter,
-            Matches.season == season
+            Matches.season == season,
+            Matches.date < date
         )
     ).all()
 
     if len(team_matches) == 0:
-        raise ValueError(f"No {side} matches found for teamID = {teamID} and season = {season}")
+        return 0
 
     # Calculate the total goal difference for the team
     total_goal_difference = sum(
@@ -106,7 +109,7 @@ def get_average_goaldiff_season(teamID, season, side, session):
 
     return average_goal_difference
 
-def get_outcome_rate(teamID, season, side, outcome, session):
+def get_outcome_rate(teamID, season, side, outcome, date, session):
     """
     Returns the win, draw, or loss rate for a team in a given season based on the side (home or away)
     """
@@ -125,12 +128,13 @@ def get_outcome_rate(teamID, season, side, outcome, session):
     team_matches = session.query(Matches).filter(
         and_(
             team_side_filter,
-            Matches.season == season
+            Matches.season == season,
+            Matches.date < date
         )
     ).all()
 
     if len(team_matches) == 0:
-        raise ValueError(f"No {side} matches found for teamID = {teamID} and season = {season}")
+        return 0
 
     # Calculate the outcome count (win, draw, or loss)
     outcome_count = 0
@@ -148,7 +152,7 @@ def get_outcome_rate(teamID, season, side, outcome, session):
 
     return outcome_rate
 
-def get_clean_sheet_rate(teamID, season, side, session):
+def get_clean_sheet_rate(teamID, season, side, date, session):
     """
     Returns the clean sheet rate for a team in a given season based on the side (home or away)
     """
@@ -162,12 +166,13 @@ def get_clean_sheet_rate(teamID, season, side, session):
     team_matches = session.query(Matches).filter(
         and_(
             team_side_filter,
-            Matches.season == season
+            Matches.season == season,
+            Matches.date < date
         )
     ).all()
 
     if len(team_matches) == 0:
-        raise ValueError(f"No {side} matches found for teamID = {teamID} and season = {season}")
+        return 0
 
     # Calculate the number of clean sheets
     clean_sheet_count = 0
@@ -218,7 +223,7 @@ def get_average_player_value(teamID, session):
     """
     # Fetch all players height from players in a team
     playerVals = [row.market_val for row in session.query(Players).filter(Players.team_id == teamID).all()]
-    playerVals = [euros_to_number(value) for value in playerVals if value != 0]
+    playerVals = [euros_to_number(value) for value in playerVals if value != 0 and any(char.isdigit() for char in value)]
 
     return int(sum(playerVals) / len(playerVals))
 
@@ -258,7 +263,7 @@ def get_points_won_ratio(teamID, date, session):
             points_won[interval] / (3 * match_count[interval]) if match_count[interval] > 0 else 0
         )
 
-    return points_won_ratio
+    return points_won_ratio[3], points_won_ratio[5], points_won_ratio[10]
 
 def get_outcome_streak(teamID, date, session):
     """
@@ -297,7 +302,6 @@ def get_home_away_form(teamID, side, date, session):
         raise ValueError("Invalid side value. Accepted values are 'home' or 'away'.")
 
     team_column = "home_team_id" if side == "home" else "away_team_id"
-    opponent_column = "away_team_id" if side == "home" else "home_team_id"
 
     matches = (
         session.query(Matches)
@@ -326,22 +330,15 @@ def get_home_away_form(teamID, side, date, session):
     return win_rate
 
 # H2H
-def get_outcome_distribution(teamID, opponentID, date, session):
+def get_outcome_distribution(teamID, matches):
     """
     Returns an outcome distribution between two teams from all matches they've played together before the inputted date
     """
-    matches = session.query(Matches).filter(
-        and_(
-            or_(
-                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
-                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
-            ),
-            Matches.date < date
-        )
-    ).all()
-
     outcome_distribution = {"win": 0, "draw": 0, "loss": 0}
 
+    if matches is None:
+        return outcome_distribution
+    
     for match in matches:
         outcome = get_outcome(match, teamID)
 
@@ -353,25 +350,20 @@ def get_outcome_distribution(teamID, opponentID, date, session):
             outcome_distribution["draw"] += 1
 
     total = sum(outcome_distribution[result] for result in outcome_distribution.keys())
+    if total == 0:
+        return 0
     for key in outcome_distribution.keys():
         outcome_distribution[key] /= total
         
     return outcome_distribution
 
-def get_side_distribution(teamID, opponentID, date, session):
+def get_side_distribution(teamID, side, matches):
     """
     Returns the winning rate of teamID at home and away when playing against opponentID
     """
-    matches = session.query(Matches).filter(
-        and_(
-            or_(
-                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
-                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
-            ),
-            Matches.date < date
-        )
-    ).all()
-
+    if matches is None:
+        return 0
+    
     home_wins = 0
     away_wins = 0
     home_games = 0
@@ -394,51 +386,41 @@ def get_side_distribution(teamID, opponentID, date, session):
         "away_win_rate": away_win_rate,
     }
 
-    return distribution
+    if side == "home":
+        return distribution["home_win_rate"]
+    else:
+        return distribution["away_win_rate"]
 
-def get_recent_encounters(teamID, opponentID, date, session):
+def get_recent_encounters(teamID, date, matches):
     """
-    Returns the win rate for teamID against opponendID for the last two years
+    Returns the win rate for teamID against opponentID for the last two years
     """
+    if matches is None:
+        return 0
+    
     two_years_ago = date - timedelta(days=365*2)
 
-    matches = session.query(Matches).filter(
-        and_(
-            or_(
-                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
-                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
-            ),
-            Matches.date < date,
-            Matches.date >= two_years_ago,
-        )
-    ).all()
-
     wins = 0
-    total_matches = len(matches)
+    total_matches = 0
+
     for match in matches:
-        if match.home_team_id == teamID and match.home_goals > match.away_goals:
-            wins += 1
-        elif match.away_team_id == teamID and match.home_goals < match.away_goals:
+        if match.date < two_years_ago:
+            break
+
+        total_matches += 1
+        if (match.home_team_id == teamID and match.home_goals > match.away_goals) or (match.away_team_id == teamID and match.home_goals < match.away_goals):
             wins += 1
 
     win_rate = wins / total_matches if total_matches > 0 else 0
-
     return win_rate
 
-def get_average_goals_per_match(teamID, opponentID, date, session):
+def get_average_goals_per_match(matches):
     """
     Returns the average goals scored in matches between teamID and opponentID
     """
-    matches = session.query(Matches).filter(
-        and_(
-            or_(
-                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
-                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
-            ),
-            Matches.date < date
-        )
-    ).all()
-
+    if matches is None:
+        return 0
+    
     total_goals = 0
     for match in matches:
         total_goals += match.home_goals + match.away_goals
@@ -450,20 +432,13 @@ def get_average_goals_per_match(teamID, opponentID, date, session):
 
     return average_goals_per_match
 
-def get_average_goals_conceded_per_match(teamID, opponentID, date, session):
+def get_average_goals_conceded_per_match(teamID, matches):
     """
     Returns average goals conceded by teamID against opponentID 
     """
-    matches = session.query(Matches).filter(
-        and_(
-            or_(
-                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
-                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
-            ),
-            Matches.date < date
-        )
-    ).all()
-
+    if matches is None:
+        return 0
+    
     goals_conceded = 0
     for match in matches:
         if match.home_team_id == teamID:
@@ -476,20 +451,13 @@ def get_average_goals_conceded_per_match(teamID, opponentID, date, session):
 
     return average_goals_conceded
 
-def get_average_goal_difference_match(teamID, opponentID, date, session):
+def get_average_goal_difference_match(teamID, matches):
     """
     Returns the average goals scored in matches between teamID and opponentID seen in teamID's perspective
     """
-    matches = session.query(Matches).filter(
-        and_(
-            or_(
-                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
-                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
-            ),
-            Matches.date < date
-        )
-    ).all()
-
+    if matches is None:
+        return 0
+    
     total_goals_difference = 0
     for match in matches:
         if match.home_team_id == teamID:
@@ -504,20 +472,13 @@ def get_average_goal_difference_match(teamID, opponentID, date, session):
 
     return average_goals_difference
 
-def get_btts_rate(teamID, opponentID, date, session):
+def get_btts_rate(matches):
     """
     Returns the percentage of both teams to score (BTTS)
     """
-    matches = session.query(Matches).filter(
-        and_(
-            or_(
-                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
-                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
-            ),
-            Matches.date < date
-        )
-    ).all()
-
+    if matches is None:
+        return 0
+    
     btts_count = 0
     for match in matches:
         if match.home_goals > 0 and match.away_goals > 0:
@@ -528,20 +489,13 @@ def get_btts_rate(teamID, opponentID, date, session):
 
     return btts_rate
 
-def get_clean_sheet_rate_h2h(teamID, opponentID, date, session):
+def get_clean_sheet_rate_h2h(teamID, matches):
     """
     Returns the clean sheet rate for teamID against opponentID
     """
-    matches = session.query(Matches).filter(
-        and_(
-            or_(
-                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
-                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
-            ),
-            Matches.date < date
-        )
-    ).all()
-
+    if matches is None:
+        return 0
+    
     clean_sheet_count = 0
     for match in matches:
         if match.home_team_id == teamID and match.away_goals == 0:
@@ -554,20 +508,13 @@ def get_clean_sheet_rate_h2h(teamID, opponentID, date, session):
 
     return clean_sheet_rate
 
-def get_over_under_2_5(teamID, opponentID, date, session):
+def get_over_under_2_5(matches):
     """
     Return the percentage of matches where total goals scored is more than 2.5
     """
-    matches = session.query(Matches).filter(
-        and_(
-            or_(
-                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
-                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
-            ),
-            Matches.date < date
-        )
-    ).all()
-
+    if matches is None:
+        return 0
+    
     over_2_5 = 0
     for match in matches:
         total_goals = match.home_goals + match.away_goals
@@ -579,20 +526,13 @@ def get_over_under_2_5(teamID, opponentID, date, session):
 
     return over_2_5_percentage
     
-def get_outcome_streak_h2h(teamID, opponentID, date, session):
+def get_outcome_streak_h2h(teamID, matches):
     """
     Returns the winning/losing streak teamID against opponentID, going in to a match
     """
-    matches = session.query(Matches).filter(
-        and_(
-            or_(
-                and_(Matches.home_team_id == teamID, Matches.away_team_id == opponentID),
-                and_(Matches.home_team_id == opponentID, Matches.away_team_id == teamID),
-            ),
-            Matches.date < date
-        )
-    ).order_by(Matches.date.desc()).all()
-
+    if matches is None:
+        return 0
+    
     streak = 0
     outcome = None
 
