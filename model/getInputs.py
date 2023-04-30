@@ -7,185 +7,85 @@ from helpers import euros_to_number, get_outcome
 
 from sqlalchemy import and_, or_
 from datetime import timedelta
+import itertools
 
-def get_average_goals_season(teamID, season, side, date, session):
-    """
-    Returns average goals for a team in a given season based on the side (home or away) before the inputted date
-    """
-    if side not in ["home", "away"]:
-        raise ValueError(f"Invalid side argument '{side}'. Valid options are 'home' and 'away'")
+def get_combined_team_stats(team_ids, season, sides, date, session):
+    if len(team_ids) != 2 or len(sides) != 2:
+        raise ValueError("Expected 2 team_ids and 2 sides")
 
-    # Filter matches based on the side
-    team_side_filter = Matches.home_team_id == teamID if side == "home" else Matches.away_team_id == teamID
+    for side in sides:
+        if side not in ["home", "away"]:
+            raise ValueError(f"Invalid side argument '{side}'. Valid options are 'home' and 'away'")
 
-    # Query all matches in which the team played during the specified season and side before the inputted date
-    team_matches = session.query(Matches).filter(
+    matches = session.query(Matches).filter(
         and_(
-            team_side_filter,
+            or_(
+                Matches.home_team_id.in_(team_ids),
+                Matches.away_team_id.in_(team_ids)
+            ),
             Matches.season == season,
             Matches.date < date
         )
     ).all()
 
-    # If no previous matches found, return 0
-    if len(team_matches) == 0:
-        return 0
+    team_stats = {
+        team_id: {
+            side: {
+                "match_count": 0,
+                "total_goals": 0,
+                "total_conceded_goals": 0,
+                "total_goal_difference": 0,
+                "win_count": 0,
+                "draw_count": 0,
+                "loss_count": 0,
+                "clean_sheet_count": 0,
+            }
+            for side in sides
+        }
+        for team_id in team_ids
+    }
 
-    # Calculate the total goals scored by the team
-    total_goals = sum(
-        match.home_goals if match.home_team_id == teamID else match.away_goals
-        for match in team_matches
-    )
+    for match in matches:
+        for team_id, side in itertools.product(team_ids, sides):
+            is_home = match.home_team_id == team_id
+            is_away = match.away_team_id == team_id
+            side_filter = is_home if side == "home" else is_away
 
-    # Calculate the average goals scored per match
-    average_goals = total_goals / len(team_matches) if team_matches else 0
+            if side_filter:
+                stats = team_stats[team_id][side]
+                stats["match_count"] += 1
 
-    return average_goals
+                goals_scored = match.home_goals if is_home else match.away_goals
+                goals_conceded = match.away_goals if is_home else match.home_goals
 
-def get_average_conceded_season(teamID, season, side, date, session):
-    """
-    Returns average conceded goals for a team in a given season based on the side (home or away)
-    """
-    if side not in ["home", "away"]:
-        raise ValueError(f"Invalid side argument '{side}'. Valid options are 'home' and 'away'")
+                stats["total_goals"] += goals_scored
+                stats["total_conceded_goals"] += goals_conceded
+                stats["total_goal_difference"] += goals_scored - goals_conceded
 
-    # Filter matches based on the side
-    team_side_filter = Matches.home_team_id == teamID if side == "home" else Matches.away_team_id == teamID
+                if goals_scored > goals_conceded:
+                    stats["win_count"] += 1
+                elif goals_scored == goals_conceded:
+                    stats["draw_count"] += 1
+                else:
+                    stats["loss_count"] += 1
 
-    # Query all matches in which the team played during the specified season and side
-    team_matches = session.query(Matches).filter(
-        and_(
-            team_side_filter,
-            Matches.season == season,
-            Matches.date < date
-        )
-    ).all()
+                if goals_conceded == 0:
+                    stats["clean_sheet_count"] += 1
 
-    if len(team_matches) == 0:
-        return 0
+    for team_id in team_ids:
+        for side in sides:
+            stats = team_stats[team_id][side]
+            match_count = stats["match_count"]
 
-    # Calculate the total conceded goals by the team
-    total_conceded_goals = sum(
-        match.away_goals if match.home_team_id == teamID else match.home_goals
-        for match in team_matches
-    )
+            if match_count > 0:
+                for key in ["total_goals", "total_conceded_goals", "total_goal_difference"]:
+                    stats[key] /= match_count
 
-    # Calculate the average conceded goals per match
-    average_conceded_goals = total_conceded_goals / len(team_matches) if team_matches else 0
+                for key in ["win_count", "draw_count", "loss_count", "clean_sheet_count"]:
+                    stats[key] = stats[key] / match_count
 
-    return average_conceded_goals
-  
-def get_average_goaldiff_season(teamID, season, side, date, session):
-    """
-    Returns average goal difference for a team in a given season based on the side (home or away)
-    """
-    if side not in ["home", "away"]:
-        raise ValueError(f"Invalid side argument '{side}'. Valid options are 'home' and 'away'")
-    
-    # Filter matches based on the side
-    team_side_filter = Matches.home_team_id == teamID if side == "home" else Matches.away_team_id == teamID
+    return team_stats
 
-    # Query all matches in which the team played during the specified season and side
-    team_matches = session.query(Matches).filter(
-        and_(
-            team_side_filter,
-            Matches.season == season,
-            Matches.date < date
-        )
-    ).all()
-
-    if len(team_matches) == 0:
-        return 0
-
-    # Calculate the total goal difference for the team
-    total_goal_difference = sum(
-        (match.home_goals - match.away_goals) if match.home_team_id == teamID
-        else (match.away_goals - match.home_goals)
-        for match in team_matches
-    )
-
-    # Calculate the average goal difference per match
-    average_goal_difference = total_goal_difference / len(team_matches) if team_matches else 0
-
-    return average_goal_difference
-
-def get_outcome_rate(teamID, season, side, outcome, date, session):
-    """
-    Returns the win, draw, or loss rate for a team in a given season based on the side (home or away)
-    """
-    outcomes = {"win": "W", "draw": "D", "loss": "L"}
-
-    if outcome not in outcomes:
-        raise ValueError(f"Invalid outcome '{outcome}'. Allowed values: 'win', 'draw', 'loss'")
-
-    if side not in ["home", "away"]:
-        raise ValueError(f"Invalid side argument '{side}'. Valid options are 'home' and 'away'")
-    
-    # Filter matches based on the side
-    team_side_filter = Matches.home_team_id == teamID if side == "home" else Matches.away_team_id == teamID
-
-    # Query all matches in which the team played during the specified season and side
-    team_matches = session.query(Matches).filter(
-        and_(
-            team_side_filter,
-            Matches.season == season,
-            Matches.date < date
-        )
-    ).all()
-
-    if len(team_matches) == 0:
-        return 0
-
-    # Calculate the outcome count (win, draw, or loss)
-    outcome_count = 0
-    for match in team_matches:
-        goal_difference = (match.home_goals - match.away_goals) if match.home_team_id == teamID else (match.away_goals - match.home_goals)
-        if goal_difference > 0 and outcomes[outcome] == "W":
-            outcome_count += 1
-        elif goal_difference == 0 and outcomes[outcome] == "D":
-            outcome_count += 1
-        elif goal_difference < 0 and outcomes[outcome] == "L":
-            outcome_count += 1
-            
-    # Calculate the outcome rate
-    outcome_rate = outcome_count / len(team_matches)
-
-    return outcome_rate
-
-def get_clean_sheet_rate(teamID, season, side, date, session):
-    """
-    Returns the clean sheet rate for a team in a given season based on the side (home or away)
-    """
-    if side not in ["home", "away"]:
-        raise ValueError(f"Invalid side argument '{side}'. Valid options are 'home' and 'away'")
-
-    # Filter matches based on the side
-    team_side_filter = Matches.home_team_id == teamID if side == "home" else Matches.away_team_id == teamID
-
-    # Query all matches in which the team played during the specified season and side
-    team_matches = session.query(Matches).filter(
-        and_(
-            team_side_filter,
-            Matches.season == season,
-            Matches.date < date
-        )
-    ).all()
-
-    if len(team_matches) == 0:
-        return 0
-
-    # Calculate the number of clean sheets
-    clean_sheet_count = 0
-    for match in team_matches:
-        if match.home_team_id == teamID and match.away_goals == 0:
-            clean_sheet_count += 1
-        elif match.away_team_id == teamID and match.home_goals == 0:
-            clean_sheet_count += 1
-
-    # Calculate the clean sheet rate
-    clean_sheet_rate = clean_sheet_count / len(team_matches)
-
-    return clean_sheet_rate
 
 # Player info
 def get_average_player_rating(teamID, session):

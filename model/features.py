@@ -29,34 +29,41 @@ def features_for_model0(teamID, opponentID, season, thisSide, date, session):
     
     start_time = time.time()
     # Season stats teamID, season, side, date, session
-    teamFeatures["team_side1_average_goals_season"] = get_average_goals_season(teamID, season, thisSide, date, session)
-    teamFeatures["team_side2_average_goals_season"] = get_average_goals_season(teamID, season, otherSide, date, session)
-    teamFeatures["opponent_side1_average_goals_season"] = get_average_goals_season(opponentID, season, otherSide, date, session)
-    teamFeatures["opponent_side2_average_goals_season"] = get_average_goals_season(opponentID, season, thisSide, date, session)
+    team_ids = [teamID, opponentID]
+    sides = [thisSide, otherSide]
+
+    combined_stats = get_combined_team_stats(team_ids, season, sides, date, session)
+
+    for stat_type in ["match_count", "total_goals", "total_conceded_goals", "total_goal_difference", "win_count", "draw_count", "loss_count", "clean_sheet_count"]:
+        teamFeatures[f"team_side1_{stat_type}_season"] = combined_stats[teamID][thisSide][stat_type]
+        teamFeatures[f"team_side2_{stat_type}_season"] = combined_stats[teamID][otherSide][stat_type]
+        teamFeatures[f"opponent_side1_{stat_type}_season"] = combined_stats[opponentID][otherSide][stat_type]
+        teamFeatures[f"opponent_side2_{stat_type}_season"] = combined_stats[opponentID][thisSide][stat_type]
+
+
+    # To get the average values, you can simply divide the 'total_*' stats by 'match_count'
+    for stat_type in ["total_goals", "total_conceded_goals", "total_goal_difference"]:
+        avg_type = stat_type.replace("total_", "average_")
+        teamFeatures[f"team_side1_{avg_type}_season"] = teamFeatures[f"team_side1_{stat_type}_season"] / teamFeatures["team_side1_match_count_season"]
+        teamFeatures[f"team_side2_{avg_type}_season"] = teamFeatures[f"team_side2_{stat_type}_season"] / teamFeatures["team_side2_match_count_season"]
+        teamFeatures[f"opponent_side1_{avg_type}_season"] = teamFeatures[f"opponent_side1_{stat_type}_season"] / teamFeatures["opponent_side1_match_count_season"]
+        teamFeatures[f"opponent_side2_{avg_type}_season"] = teamFeatures[f"opponent_side2_{stat_type}_season"] / teamFeatures["opponent_side2_match_count_season"]
+
+    # To get the win, draw, loss, and clean sheet rates, you can simply use the existing counts
+    for stat_type in ["win_count", "draw_count", "loss_count", "clean_sheet_count"]:
+        rate_type = stat_type.replace("_count", "_rate")
+        teamFeatures[f"team_side1_{rate_type}_season"] = teamFeatures[f"team_side1_{stat_type}_season"]
+        teamFeatures[f"team_side2_{rate_type}_season"] = teamFeatures[f"team_side2_{stat_type}_season"]
+        teamFeatures[f"opponent_side1_{rate_type}_season"] = teamFeatures[f"opponent_side1_{stat_type}_season"]
+        teamFeatures[f"opponent_side2_{rate_type}_season"] = teamFeatures[f"opponent_side2_{stat_type}_season"]
     
-    teamFeatures["team_side1_conceded_season"] = get_average_conceded_season(teamID, season, thisSide, date, session)
-    teamFeatures["team_side2_conceded_season"] = get_average_conceded_season(teamID, season, otherSide, date, session)
-    teamFeatures["opponent_side1_conceded_season"] = get_average_conceded_season(opponentID, season, otherSide, date, session)
-    teamFeatures["opponent_side2_conceded_season"] = get_average_conceded_season(opponentID, season, thisSide, date, session)
-    
-    teamFeatures["team_side1_goaldiff_season"] = get_average_goaldiff_season(teamID, season, thisSide, date, session)
-    teamFeatures["team_side2_goaldiffseason"] = get_average_goaldiff_season(teamID, season, otherSide, date, session)
-    teamFeatures["opponent_side1_goaldiff_season"] = get_average_goaldiff_season(opponentID, season, thisSide, date, session)
-    teamFeatures["opponent_side2_goaldiff_season"] = get_average_goaldiff_season(opponentID, season, otherSide, date, session)
-    
-    teamFeatures["this_side1_winrate_season"] = get_outcome_rate(teamID, season, thisSide, "win", date, session)
-    teamFeatures["this_side2_winrate_season"] = get_outcome_rate(teamID, season, otherSide, "win", date, session)
-    teamFeatures["opponent_side1_winrate_season"] = get_outcome_rate(opponentID, season, thisSide, "win", date, session)
-    teamFeatures["opponent_side2_winrate_season"] = get_outcome_rate(opponentID, season, otherSide, "win", date, session)
-    
-    teamFeatures["team_side1_clean_seet_season"] = get_clean_sheet_rate(teamID, season, thisSide, date, session)
-    teamFeatures["team_side2_clean_seet_season"] = get_clean_sheet_rate(teamID, season, otherSide, date, session)
-    teamFeatures["opponent_side1_clean_seet_season"] = get_clean_sheet_rate(opponentID, season, thisSide, date, session)
-    teamFeatures["opponent_side2_clean_seet_season"] = get_clean_sheet_rate(opponentID, season, otherSide, date, session)
+        
+    print(teamFeatures)
     
     end_time = time.time()
     elapsed_time = end_time - start_time
     print(f"Season stats: {elapsed_time:.2f} seconds")
+    exit()
     
     start_time = time.time()
     # Recent form
