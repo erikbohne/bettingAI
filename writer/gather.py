@@ -136,165 +136,116 @@ def gather_match_statistics(information: List[str]) -> Dict[str, Any]:
         * Aerial duels won
         * Successfull dribbles
     """
-    for i, info in enumerate(information):
-        if info == "showSuperLive":
-            total = 0
-            for j in range(200):
-                if information[i + j] == "Total":
-                    total += 1
-                if total == 2:
-                    start = i + j
-                    break
+    def find_start_index(information: List[str]) -> int:
+        total = 0
+        start = None
+        for i, info in enumerate(information):
+            if info == "showSuperLive":
+                for j in range(200):
+                    if information[i + j] == "Total":
+                        total += 1
+                    if total == 2:
+                        return i + j
+                    
+        if start is None:
+            for i, info in enumerate(information):
+                if info == "Top":
+                    total = 0
+                    for j in range(200):
+                        if i + j == len(information):
+                            return False
+                        if information[i + j] == "Total":
+                            total += 1
+                        if total == 2:
+                            start = i + j
+                            return start
+        return False
 
-    # Find all shots statistics
-    shots = []
-    for i in range(start, start + 100):
-        if any(char.isdigit() for char in information[i]): # check if there is a digit
-            shots.append(information[i].split(",")) # from eg '14,7' -> ['14', '7']
-            if len(shots) == 7:
-                start = i + 1
-                break
-
-    # Put all shots info in dict
-    shots = {
-        "total shots": shots[0] if len(shots) > 0 else None,
-        "off target": shots[1] if len(shots) > 1 else None,
-        "on target": shots[2] if len(shots) > 2 else None,
-        "blocked shot": shots[3] if len(shots) > 3 else None,
-        "hit woodwork": shots[4] if len(shots) > 4 else None,
-        "inside box": shots[5] if len(shots) > 5 else None,
-        "outside box": shots[6] if len(shots) > 6 else None
-    }
-
-    # Find all xG statistics
-    xG = []
-    current = []
-    penalty = False
-    values = 6
-    for i in range(start, start + 200):
-        if information[i] == "expected_goals_penalty":
-            penalty = True
-            values = 7
-        if any(char.isdigit() for char in information[i]):
-            current.append(information[i])
-            if len(current) % 2 == 0:
-                xG.append(current)
-                if len(xG) == values:
-                    start = i + 1
-                    break
-                current = []
-                
-    # Put all xG stats in a dict
-    xG = {
-        "expected goals": xG[0] if len(xG) > 0 else None,
-        "first half": xG[1] if len(xG) > 1 else None,
-        "second half": xG[2] if len(xG) > 2 else None,
-        "open play": xG[3] if len(xG) > 3 else None,
-        "set play": xG[4] if len(xG) > 4 else None,
-        "penalty": xG[5] if penalty else None if len(xG) > 5 else None,
-        "on target": xG[5] if not penalty and len(xG) > 5 else xG[6] if len(xG) > 6 else None,
-    }
-    
-    # Find and gather passes statistics
-    passes = []
-    cooldown = 0
-    for i in range(start, start + 100):
-        if cooldown != 0:
-            cooldown -= 1
-            continue
-        if any(char.isdigit() for char in information[i]):
-            if len(passes) in [1, 4, 5]: # for the stats that include accuracy
-                passes.append([information[j] for j in range(i, i + 5)])
-                cooldown = 4
+    def extract_stats_by_activation_word(activation_word: str, start: int, stats_count: int) -> List[List[str]]:
+        data = []
+        found_values = 0
+        i = start
+        while found_values < stats_count and i < len(information):
+            if information[i] == activation_word:
+                i += 1
+                while found_values < stats_count and i < len(information):
+                    if any(char.isdigit() for char in information[i]):
+                        if ',' not in information[i]:
+                            if information[i + 2] == '%':
+                                data.append([information[i], information[i + 1], information[i + 3], information[i + 4]])
+                                found_values += 1
+                                i += 5
+                            else:
+                                data.append([information[i], information[i + 1]])
+                                found_values += 1
+                                i += 2
+                        else:
+                            data.append(information[i].split(","))
+                            found_values += 1
+                            i += 1
+                    else:
+                        i += 1
             else:
-                passes.append(information[i].split(","))
-            if len(passes) == 7:
-                start = i + 1
-                break
-            
-    # Put all pass stats in a dict
-    passes = {
-        "passes": passes[0] if len(passes) > 0 else None,
-        "accurate passes": passes[1] if len(passes) > 1 else None,
-        "own half": passes[2] if len(passes) > 2 else None,
-        "opposition half": passes[3] if len(passes) > 3 else None,
-        "accurate long balls": passes[4] if len(passes) > 4 else None,
-        "accurate crosses": passes[5] if len(passes) > 5 else None,
-        "throws": passes[6] if len(passes) > 6 else None
-    }
-    
-    # Find and gather defence statistics
-    defence = []
-    cooldown = 0
-    for i in range(start, start + 100):
-        if cooldown != 0:
-            cooldown -= 1
-            continue
-        if any(char.isdigit() for char in information[i]):
-            if len(defence) in [0]: # for the stats that include accuracy
-                defence.append([information[j] for j in range(i, i + 5)])
-                cooldown = 4
-            else:
-                defence.append(information[i].split(","))
-            if len(defence) == 5:
-                start = i + 1
-                break
-    
-    # Put all defence stats in a dict
-    defence = {
-        "tackles won": defence[0] if len(defence) > 0 else None,
-        "interceptions": defence[1] if len(defence) > 1 else None,
-        "blocks": defence[2] if len(defence) > 2 else None,
-        "clearances": defence[3] if len(defence) > 3 else None,
-        "keeper saves": defence[4] if len(defence) > 4 else None
-    }
-    
-    # Find and gather duels stats
-    duels = []
-    cooldown = 0
-    for i in range(start, start + 100):
-        if cooldown != 0:
-            cooldown -= 1
-            continue
-        if any(char.isdigit() for char in information[i]):
-            if len(duels) in [1, 2, 3]: # for the stats that include accuracy
-                duels.append([information[j] for j in range(i, i + 5)])
-                cooldown = 4
-            else:
-                duels.append(information[i].split(","))
-            if len(duels) == 4:
-                start = i + 6
-                break
-    
-    # Put all duel stats in a dict
-    duels = {
-        "duels won": duels[0] if len(duels) > 0 else None,
-        "ground duels": duels[1] if len(duels) > 1 else None,
-        "aerial duels": duels[2] if len(duels) > 2 else None,
-        "successfull dribbles": duels[3] if len(duels) > 3 else None
-    }
-    
-    # Find and gather dicipline stats
-    cards = []
-    for i in range(start, start + 50):
-        if any(char.isdigit() for char in information[i]): # check if there is a digit
-            cards.append(information[i].split(",")) # from eg '14,7' -> ['14', '7']
-            if len(cards) == 2:
-                break
-    
-    # Put card stats in a dict
-    cards = {
-        "yellow cards" : cards[0] if len(cards) > 0 else None,
-        "red cards" : cards[1]if len(cards) > 1 else None
-    }
+                i += 1
+        return data
 
+    start = find_start_index(information)
+    if not start:
+        raise IndexError("Unable to find the start index.")
+
+    # Shots
+    shots_keys = [
+        "total shots", "off target", "on target", "blocked shot",
+        "hit woodwork", "inside box", "outside box"
+    ]
+    shots = extract_stats_by_activation_word("shots", start, len(shots_keys))
+    shots_dict = {key: value for key, value in zip(shots_keys, shots)}
+
+    # xG
+    xg_keys = [
+        "expected goals", "first half", "second half", "open play",
+        "set play", "penalty", "on target"
+    ]
+    if "penalty" not in information[start:start+200]:
+        xg_keys.remove("penalty") # information will only contain xg penalty if there was a penalty
+        
+    xg = extract_stats_by_activation_word("xG", start, len(xg_keys))
+    xg_dict = {key: value for key, value in zip(xg_keys, xg)}
+
+    # Passes
+    passes_keys = [
+        "passes", "accurate passes", "own half", "opposition half",
+        "accurate long balls", "accurate crosses", "throws"
+    ]
+    passes = extract_stats_by_activation_word("Passes", start, len(passes_keys))
+    passes_dict = {key: value for key, value in zip(passes_keys, passes)}
+
+    # Defence
+    defence_keys = [
+        "tackles won", "interceptions", "blocks", "clearances", "keeper saves"
+    ]
+    defence = extract_stats_by_activation_word("Defence", start, len(defence_keys))
+    defence_dict = {key: value for key, value in zip(defence_keys, defence)}
+
+    # Duels
+    duels_keys = [
+        "duels won", "ground duels", "aerial duels", "successfull dribbles"
+    ]
+    duels = extract_stats_by_activation_word("Duels", start, len(duels_keys))
+    duels_dict = {key: value for key, value in zip(duels_keys, duels)}
+
+    # Cards
+    cards_keys = ["yellow cards", "red cards"]
+    cards = extract_stats_by_activation_word("Yellow", start, len(cards_keys))
+    cards_dict = {key: value for key, value in zip(cards_keys, cards)}
+    
     return {
-        "shots" : shots,
-        "xG" : xG,
-        "passes" : passes,
-        "defence" : defence,
-        "duels" : duels,
-        "cards" : cards
+        "shots": shots_dict,
+        "xG": xg_dict,
+        "passes": passes_dict,
+        "defence": defence_dict,
+        "duels": duels_dict,
+        "cards": cards_dict
     }
 
 def gather_player_bio(information: List[str]) -> Dict[str, Union[Dict[str, Any], List]]:

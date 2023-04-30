@@ -115,15 +115,16 @@ def get_match_info(url: str) -> Union[bool, Tuple[Dict[str, Any], Dict[Any, Any]
     today = datetime.date.today() # current day
     difference = today - dtg.date() # find time delta
     if difference.days < 1: # if game is not played yet
-        return False
+        return False, False
     
     # Get competition name and id
     league = gather_league(tokenized[10:100])
     
     # Block to get init stats from match
     mainInfo = gather_main_info(tokenized[:150])
+    
     # Block to get all stats from match
-    statistics = gather_match_statistics(tokenized[1500:4000])
+    statistics = gather_match_statistics(tokenized[:6000])
     
     # Get player stats from match
     playerPerformance = gather_player_performance(tokenized[2000:])

@@ -6,8 +6,6 @@ import sqlalchemy
 import datetime as dt
 from typing import List, Optional, Dict
 
-from google.cloud.sql.connector import Connector
-from google.cloud.sql.connector.connection import Connection
 from sqlalchemy.orm import sessionmaker
 from collections import Counter
 
@@ -77,7 +75,7 @@ def runner(session: sqlalchemy.orm.Session) -> None:
                 except Exception as e:
                     session.rollback()
                     exceptions[league["id"]][f"{type(e)} : {e}"] += 1
-     
+
         # PART TWO: GET MATCH INFO
         seasons = SEASONS[league["year_span"]]
         for season in seasons: # iterate over last ten seasons for the league
@@ -98,18 +96,20 @@ def runner(session: sqlalchemy.orm.Session) -> None:
                     exceptions[league["id"]][f"{type(e)} : {e}"] += 1
                     continue
                 
+                if matchStats is False: # it will return False if the match is in the future
+                    continue
+                
                 # Add match data to the database
                 try:
                     trackData["mExplored"] += 1 # track matches explored
                     match, homeSide, awaySide = add_match(matchID, season, matchStats)
                     session.add(match) # add main info
-                    session.add(homeSide) # add home stats
-                    session.add(awaySide) # add away stats
-                    session.commit() # commit match
-                    print(f"added -> {matchStats['maininfo']['hometeam']} - {matchStats['maininfo']['awayteam']}")
+                    if homeSide is not None:
+                        session.add(homeSide) # add home stats
+                        session.add(awaySide) # add away stats
+                    session.commit() # commit match stats
                     trackData["mAdded"] += 1 # track match added
                 except Exception as e:
-                    print(e)
                     session.rollback()
                     exceptions[league["id"]][f"{type(e)} : {e}"] += 1
                     
@@ -134,6 +134,7 @@ def runner(session: sqlalchemy.orm.Session) -> None:
                 if count > 5: # ensure we dont record the error of trying to add something that is already there
                     logger.error(f"    {error}   ->  {count}") # log each exception
     
+    print(exceptions)
     # Get the end time of the data gathering
     session.close()
     endTime = dt.datetime.now()

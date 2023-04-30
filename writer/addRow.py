@@ -22,91 +22,95 @@ def add_match(id: int, season: str, matchStats: Mapping) -> Tuple[Matches, Match
                     date = matchStats["dtg"],
                     home_goals = matchStats["maininfo"]["homescore"],
                     away_goals = matchStats["maininfo"]["awayscore"])
-                    
-    # home side statistics
-    homeSide = MatchStats(match_id = id,
-                        side = "home",
-                        total_shots = matchStats["statistics"]["shots"]["total shots"][0],
-                        shots_off_target = matchStats["statistics"]["shots"]["off target"][0],
-                        shots_on_target = matchStats["statistics"]["shots"]["on target"][0],
-                        blocked_shots = matchStats["statistics"]["shots"]["blocked shot"][0],
-                        hit_woodwork = matchStats["statistics"]["shots"]["hit woodwork"][0],
-                        shots_inside_box = matchStats["statistics"]["shots"]["inside box"][0],
-                        shots_outside_box = matchStats["statistics"]["shots"]["outside box"][0],
-                                          
-                        xG_total = matchStats["statistics"]["xG"]["expected goals"][0],
-                        xG_first_half = matchStats["statistics"]["xG"]["first half"][0],
-                        xG_second_half = matchStats["statistics"]["xG"]["second half"][0],
-                        xG_open_play = matchStats["statistics"]["xG"]["open play"][0],
-                        xG_set_play = matchStats["statistics"]["xG"]["set play"][0],
-                        xGOT = matchStats["statistics"]["xG"]["on target"][0],
+    if matchStats["statistics"] != {}:              
+        # home side statistics
+        homeSide = MatchStats(
+            match_id=id,
+            side="home",
+            total_shots=matchStats["statistics"]["shots"].get("total shots", [None])[0],
+            shots_off_target=matchStats["statistics"]["shots"].get("off target", [None])[0],
+            shots_on_target=matchStats["statistics"]["shots"].get("on target", [None])[0],
+            blocked_shots=matchStats["statistics"]["shots"].get("blocked shot", [None])[0],
+            hit_woodwork=matchStats["statistics"]["shots"].get("hit woodwork", [None])[0],
+            shots_inside_box=matchStats["statistics"]["shots"].get("inside box", [None])[0],
+            shots_outside_box=matchStats["statistics"]["shots"].get("outside box", [None])[0],
+
+            xG_total=matchStats["statistics"]["xG"].get("expected goals", [None])[0],
+            xG_first_half=matchStats["statistics"]["xG"].get("first half", [None])[0],
+            xG_second_half=matchStats["statistics"]["xG"].get("second half", [None])[0],
+            xG_open_play=matchStats["statistics"]["xG"].get("open play", [None])[0],
+            xG_set_play=matchStats["statistics"]["xG"].get("set play", [None])[0],
+            xGOT=matchStats["statistics"]["xG"].get("on target", [None])[0],
+
+            accurate_passes=matchStats["statistics"]["passes"].get("accurate passes", [None])[0],
+            accuracy=matchStats["statistics"]["passes"].get("accurate passes", [None, None])[1],
+            own_half=matchStats["statistics"]["passes"].get("own half", [None])[0],
+            opposition_half=matchStats["statistics"]["passes"].get("opposition half", [None])[0],
+            accurate_long_balls=matchStats["statistics"]["passes"].get("accurate long balls", [None])[0],
+            accurate_crosses=matchStats["statistics"]["passes"].get("accurate crosses", [None])[0],
+            throws=matchStats["statistics"]["passes"].get("throws", [None])[0],
+
+            tackles_won=matchStats["statistics"]["defence"].get("tackles won", [None])[0],
+            accuracy_tackles=matchStats["statistics"]["defence"].get("tackles won", [None, None])[1],
+            interceptions=matchStats["statistics"]["defence"].get("interceptions", [None])[0],
+            blocks=matchStats["statistics"]["defence"].get("blocks", [None])[0],
+            clearances=matchStats["statistics"]["defence"].get("clearances", [None])[0],
+            keeper_saves=matchStats["statistics"]["defence"].get("keeper saves", [None])[0],
+
+            yellow_cards=matchStats["statistics"]["cards"].get("yellow cards", [None])[0],
+            red_cards=matchStats["statistics"]["cards"].get("red cards", [None])[0],
+
+            duels_won=matchStats["statistics"]["duels"].get("duels won", [None])[0],
+            ground_duels_won=matchStats["statistics"]["duels"].get("ground duels", [None])[0],
+            aerial_duels_won=matchStats["statistics"]["duels"].get("aerial duels", [None])[0],
+            successfull_dribbles=matchStats["statistics"]["duels"].get("successfull dribbles", [None])[0]
+            )
                         
-                        accurate_passes = matchStats["statistics"]["passes"]["accurate passes"][0],
-                        accuracy = matchStats["statistics"]["passes"]["accurate passes"][1],
-                        own_half = matchStats["statistics"]["passes"]["own half"][0],
-                        opposition_half = matchStats["statistics"]["passes"]["opposition half"][0],
-                        accurate_long_balls = matchStats["statistics"]["passes"]["accurate long balls"][0],
-                        accurate_crosses = matchStats["statistics"]["passes"]["accurate crosses"][0],
-                        throws = matchStats["statistics"]["passes"]["throws"][0],
-                        
-                        tackles_won = matchStats["statistics"]["defence"]["tackles won"][0],
-                        accuracy_tackles = matchStats["statistics"]["defence"]["tackles won"][1],
-                        interceptions = matchStats["statistics"]["defence"]["interceptions"][0],
-                        blocks = matchStats["statistics"]["defence"]["blocks"][0],
-                        clearances = matchStats["statistics"]["defence"]["clearances"][0],
-                        keeper_saves = matchStats["statistics"]["defence"]["keeper saves"][0],
-                        
-                        yellow_cards = matchStats["statistics"]["cards"]["yellow cards"][0],
-                        red_cards = matchStats["statistics"]["cards"]["red cards"][0],
-                        
-                        duels_won = matchStats["statistics"]["duels"]["duels won"][0],
-                        ground_duels_won = matchStats["statistics"]["duels"]["ground duels"][0],
-                        aerial_duels_won = matchStats["statistics"]["duels"]["aerial duels"][0],
-                        successfull_dribbles = matchStats["statistics"]["duels"]["successfull dribbles"][0])
-                    
-    # away side statistics
-    awaySide = MatchStats(match_id = id,
-                            side = "away",
-                            
-                            total_shots = matchStats["statistics"]["shots"]["total shots"][1],
-                            shots_off_target = matchStats["statistics"]["shots"]["off target"][1],
-                            shots_on_target = matchStats["statistics"]["shots"]["on target"][1],
-                            blocked_shots = matchStats["statistics"]["shots"]["blocked shot"][1],
-                            hit_woodwork = matchStats["statistics"]["shots"]["hit woodwork"][1],
-                            shots_inside_box = matchStats["statistics"]["shots"]["inside box"][1],
-                            shots_outside_box = matchStats["statistics"]["shots"]["outside box"][1],
-                            
-                            xG_total = matchStats["statistics"]["xG"]["expected goals"][1],
-                            xG_first_half = matchStats["statistics"]["xG"]["first half"][1],
-                            xG_second_half = matchStats["statistics"]["xG"]["second half"][1],
-                            xG_open_play = matchStats["statistics"]["xG"]["open play"][1],
-                            xG_set_play = matchStats["statistics"]["xG"]["set play"][1],
-                            xGOT = matchStats["statistics"]["xG"]["on target"][1],
-                            
-                            accurate_passes = matchStats["statistics"]["passes"]["accurate passes"][3],
-                            accuracy = matchStats["statistics"]["passes"]["accurate passes"][4],
-                            own_half = matchStats["statistics"]["passes"]["own half"][1],
-                            opposition_half = matchStats["statistics"]["passes"]["opposition half"][1],
-                            accurate_long_balls = matchStats["statistics"]["passes"]["accurate long balls"][3],
-                            accurate_crosses = matchStats["statistics"]["passes"]["accurate crosses"][3],
-                            throws = matchStats["statistics"]["passes"]["throws"][1],
-                            
-                            tackles_won = matchStats["statistics"]["defence"]["tackles won"][3],
-                            accuracy_tackles = matchStats["statistics"]["defence"]["tackles won"][4],
-                            interceptions = matchStats["statistics"]["defence"]["interceptions"][1],
-                            blocks = matchStats["statistics"]["defence"]["blocks"][1],
-                            clearances = matchStats["statistics"]["defence"]["clearances"][1],
-                            keeper_saves = matchStats["statistics"]["defence"]["keeper saves"][1],
-                            
-                            yellow_cards = matchStats["statistics"]["cards"]["yellow cards"][1],
-                            red_cards = matchStats["statistics"]["cards"]["red cards"][1],
-                            
-                            duels_won = matchStats["statistics"]["duels"]["duels won"][1],
-                            ground_duels_won = matchStats["statistics"]["duels"]["ground duels"][3],
-                            aerial_duels_won = matchStats["statistics"]["duels"]["aerial duels"][3],
-                            successfull_dribbles = matchStats["statistics"]["duels"]["successfull dribbles"][3])
+        # away side statistics
+        awaySide = MatchStats(
+            match_id=id,
+            side="away",
+            total_shots=matchStats["statistics"]["shots"].get("total shots", [None, None])[1],
+            shots_off_target=matchStats["statistics"]["shots"].get("off target", [None, None])[1],
+            shots_on_target=matchStats["statistics"]["shots"].get("on target", [None, None])[1],
+            blocked_shots=matchStats["statistics"]["shots"].get("blocked shot", [None, None])[1],
+            hit_woodwork=matchStats["statistics"]["shots"].get("hit woodwork", [None, None])[1],
+            shots_inside_box=matchStats["statistics"]["shots"].get("inside box", [None, None])[1],
+            shots_outside_box=matchStats["statistics"]["shots"].get("outside box", [None, None])[1],
+
+            xG_total=matchStats["statistics"]["xG"].get("expected goals", [None, None])[1],
+            xG_first_half=matchStats["statistics"]["xG"].get("first half", [None, None])[1],
+            xG_second_half=matchStats["statistics"]["xG"].get("second half", [None, None])[1],
+            xG_open_play=matchStats["statistics"]["xG"].get("open play", [None, None])[1],
+            xG_set_play=matchStats["statistics"]["xG"].get("set play", [None, None])[1],
+            xGOT=matchStats["statistics"]["xG"].get("on target", [None, None])[1],
+
+            accurate_passes=matchStats["statistics"]["passes"].get("accurate passes", [None, None, None, None])[2],
+            accuracy=matchStats["statistics"]["passes"].get("accurate passes", [None, None, None, None])[3],
+            own_half=matchStats["statistics"]["passes"].get("own half", [None, None])[1],
+            opposition_half=matchStats["statistics"]["passes"].get("opposition half", [None, None])[1],
+            accurate_long_balls=matchStats["statistics"]["passes"].get("accurate long balls", [None, None, None, None])[2],
+            accurate_crosses=matchStats["statistics"]["passes"].get("accurate crosses", [None, None, None, None])[2],
+            throws=matchStats["statistics"]["passes"].get("throws", [None, None])[1],
+
+            tackles_won=matchStats["statistics"]["defence"].get("tackles won", [None, None, None, None])[2],
+            accuracy_tackles=matchStats["statistics"]["defence"].get("tackles won", [None, None, None, None])[3],
+            interceptions=matchStats["statistics"]["defence"].get("interceptions", [None, None])[1],
+            blocks=matchStats["statistics"]["defence"].get("blocks", [None, None])[1],
+            clearances=matchStats["statistics"]["defence"].get("clearances", [None, None])[1],
+            keeper_saves=matchStats["statistics"]["defence"].get("keeper saves", [None, None])[1],
+
+            yellow_cards=matchStats["statistics"]["cards"].get("yellow cards", [None, None])[1],
+            red_cards=matchStats["statistics"]["cards"].get("red cards", [None, None])[1],
+
+            duels_won=matchStats["statistics"]["duels"].get("duels won", [None, None])[1],
+            ground_duels_won=matchStats["statistics"]["duels"].get("ground duels", [None, None, None, None])[2],
+            aerial_duels_won=matchStats["statistics"]["duels"].get("aerial duels", [None, None, None, None])[2],
+            successfull_dribbles=matchStats["statistics"]["duels"].get("successfull dribbles", [None, None, None, None])[2]
+            )
     
-    return match, homeSide, awaySide
+        return match, homeSide, awaySide
+    return match, None, None
 
 def add_player_performance(match_id: int, playerStats: Mapping, player: str) -> PlayerStats:
     

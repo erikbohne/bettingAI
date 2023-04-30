@@ -21,7 +21,7 @@ def add_leagues() -> None:
     Session = sessionmaker(connection)
     session = Session()
     
-    league1 = Leagues(id="108", name="League One", country="England", n_teams=24, level=3, year_span=2)
+    league1 = Leagues(id="204", name="2. divisjon", country="Norway", n_teams=28, level=3, year_span=1)
     session.add(league1)
     
     session.commit()

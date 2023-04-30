@@ -8,14 +8,14 @@ import sys
 sys.path.append(os.path.join("..", "googleCloud"))
 from initPostgreSQL import initPostgreSQL
 
-from google.cloud.sql.connector import Connector
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import and_
+import sqlalchemy
 import traceback
 
 from databaseClasses import *
 from addRow import *
-from scraper import get_match_links, get_player_links, get_player_bio
+from scraper import get_match_links, get_player_links, get_player_bio, get_match_info
 from values import SEASONS
 
 def main(session: sqlalchemy.orm.Session) -> None:
@@ -41,6 +41,17 @@ def main(session: sqlalchemy.orm.Session) -> None:
             for match in matches:
                 if match not in database:
                     notInDatabase["matches"][id][season].append(match)
+                    try:
+                        matchStats, playerStats = get_match_info(str(match))
+                        match, homeSide, awaySide = add_match(match, season, matchStats)
+                        session.add(match) # add main info
+                        session.add(homeSide) # add home stats
+                        session.add(awaySide) # add away stats
+                        session.commit()
+                        print("added")
+                    except Exception as e:
+                        session.rollback()
+                        print(f"{match} -> {e}")
 
         continue
         teams = session.query(Teams).filter(Teams.league_id == id)
