@@ -30,17 +30,8 @@ def main(session: sqlalchemy.orm.Session) -> None:
     # Create data generator
     data = Model0DataGenerator(matches)
     
-    #start_time = time.time()
-    #batch_inputs, batch_outputs = next(data.generate())
-    #end_time = time.time()
-    #elapsed_time = end_time - start_time
-    #print(f"Time taken: {elapsed_time:.2f} seconds")
-    #for inputs, targets in zip(batch_inputs, batch_outputs):
-    #    print(inputs, targets)
-    
     # Init model
     model0 = BettingModel0()
-    
     
     # Optimizer and loss function
     optimizer = optim.Adam(model0.parameters(), lr=LEARNINGRATE)
@@ -50,36 +41,31 @@ def main(session: sqlalchemy.orm.Session) -> None:
     epochs = 10
     for epoch in range(epochs):
         for batch in range(int(len(matches)/BATCHSIZE)):
+            start_time = time.time()
+            inputs, targets = next(data.generate()) # get the inputs and targets from the batch
+                
+            # Convert inputs and targets to tensors
+            inputs = torch.tensor(inputs, dtype=torch.float32)
+            targets = torch.tensor(targets, dtype=torch.float32)
             
-            batch_inputs, batch_outputs = next(data.generate()) # get the inputs and targets from the batch
+            # Zero the optimizer gradients
+            optimizer.zero_grad()
             
-            for inputs, targets in (batch_inputs, batch_outputs): # get the inputs and targets from the batch
-                
-                # Convert inputs and targets to tensors
-                inputs = torch.tensor(inputs, dtype=torch.float32)
-                targets = torch.tensor(targets, dtype=torch.long)
-                
-                # Zero the optimizer gradients
-                optimizer.zero_grad()
-                
-                # Forward pass
-                outputs = model0(inputs)
-                
-                print(outputs, targets)
-                
-                # Calculate losss
-                loss = criterion(outputs, targets)
-                
-                print(loss.item())
-                
-                # Backward pass
-                loss.backward()
-                
-                # Update weights
-                optimizer.step()
+            # Forward pass
+            outputs = model0(inputs)
             
-            print(f"Batch: {batch} complte")
-    
+            # Calculate losss
+            loss = criterion(outputs, targets)
+            
+            # Backward pass
+            loss.backward()
+            
+            # Update weights
+            optimizer.step()
+            
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            print(f"Batch: {batch}/{len(matches)/BATCHSIZE} complete with loss -> {loss.item()} in a time of -> {elapsed_time:.2f}")
     
 
 class Model0DataGenerator:
@@ -100,7 +86,6 @@ class Model0DataGenerator:
                     Y_batch.append(labels(matchID, teamID, session)) # returns the labels for the match
                     X_batch.append(features_for_model0(opponentID, teamID, season, "away", date, session))
                     Y_batch.append(labels(matchID, opponentID, session)) # returns the labels for the match
-                    print(batch)
                     batch += 1
             
                 yield X_batch, Y_batch  

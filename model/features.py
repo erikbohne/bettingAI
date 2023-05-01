@@ -15,8 +15,6 @@ from typing import List
 from getInputs import *
 from queries import *
 
-import time
-
 def features_for_model0(teamID, opponentID, season, thisSide, date, session):
     """
     Returns all the features needed from a match for model0 training
@@ -26,61 +24,22 @@ def features_for_model0(teamID, opponentID, season, thisSide, date, session):
     # Init team features
     teamFeatures = {}
     
-    
-    start_time = time.time()
     # Season stats teamID, season, side, date, session
     team_ids = [teamID, opponentID]
     sides = [thisSide, otherSide]
-
-    combined_stats = get_combined_team_stats(team_ids, season, sides, date, session)
-
-    for stat_type in ["match_count", "total_goals", "total_conceded_goals", "total_goal_difference", "win_count", "draw_count", "loss_count", "clean_sheet_count"]:
-        teamFeatures[f"team_side1_{stat_type}_season"] = combined_stats[teamID][thisSide][stat_type]
-        teamFeatures[f"team_side2_{stat_type}_season"] = combined_stats[teamID][otherSide][stat_type]
-        teamFeatures[f"opponent_side1_{stat_type}_season"] = combined_stats[opponentID][otherSide][stat_type]
-        teamFeatures[f"opponent_side2_{stat_type}_season"] = combined_stats[opponentID][thisSide][stat_type]
-
-
-    # To get the average values, you can simply divide the 'total_*' stats by 'match_count'
-    for stat_type in ["total_goals", "total_conceded_goals", "total_goal_difference"]:
-        avg_type = stat_type.replace("total_", "average_")
-        teamFeatures[f"team_side1_{avg_type}_season"] = teamFeatures[f"team_side1_{stat_type}_season"] / teamFeatures["team_side1_match_count_season"]
-        teamFeatures[f"team_side2_{avg_type}_season"] = teamFeatures[f"team_side2_{stat_type}_season"] / teamFeatures["team_side2_match_count_season"]
-        teamFeatures[f"opponent_side1_{avg_type}_season"] = teamFeatures[f"opponent_side1_{stat_type}_season"] / teamFeatures["opponent_side1_match_count_season"]
-        teamFeatures[f"opponent_side2_{avg_type}_season"] = teamFeatures[f"opponent_side2_{stat_type}_season"] / teamFeatures["opponent_side2_match_count_season"]
-
-    # To get the win, draw, loss, and clean sheet rates, you can simply use the existing counts
-    for stat_type in ["win_count", "draw_count", "loss_count", "clean_sheet_count"]:
-        rate_type = stat_type.replace("_count", "_rate")
-        teamFeatures[f"team_side1_{rate_type}_season"] = teamFeatures[f"team_side1_{stat_type}_season"]
-        teamFeatures[f"team_side2_{rate_type}_season"] = teamFeatures[f"team_side2_{stat_type}_season"]
-        teamFeatures[f"opponent_side1_{rate_type}_season"] = teamFeatures[f"opponent_side1_{stat_type}_season"]
-        teamFeatures[f"opponent_side2_{rate_type}_season"] = teamFeatures[f"opponent_side2_{stat_type}_season"]
+    features = get_combined_team_stats(team_ids, season, sides, date, session)
     
-        
-    print(teamFeatures)
-    
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print(f"Season stats: {elapsed_time:.2f} seconds")
-    exit()
-    
-    start_time = time.time()
     # Recent form
-    teamFeatures["team_points_rate_3"], teamFeatures["team_points_rate_5"], teamFeatures["team_points_rate_10"]  = get_points_won_ratio(teamID, date, session)
-    teamFeatures["opponent_points_rate_3"], teamFeatures["opponent_points_rate_5"], teamFeatures["opponent_points_rate_10"]  = get_points_won_ratio(opponentID, date, session)
+    matches = query_recent_form(teamID, opponentID, date, session)
+    teamFeatures["team_points_rate_3"], teamFeatures["team_points_rate_5"], teamFeatures["team_points_rate_10"]  = get_points_won_ratio(teamID, matches)
+    teamFeatures["opponent_points_rate_3"], teamFeatures["opponent_points_rate_5"], teamFeatures["opponent_points_rate_10"]  = get_points_won_ratio(opponentID, matches)
+
+    teamFeatures["team_outcome_streak"] = get_outcome_streak(teamID, matches)
+    teamFeatures["opponent_outcome_streak"] = get_outcome_streak(opponentID, matches)
+
+    teamFeatures["home_side_form"] = get_home_away_form(teamID, thisSide, matches)
+    teamFeatures["away_side_form"] = get_home_away_form(opponentID, otherSide, matches)
     
-    teamFeatures["team_outcome_streak"] = get_outcome_streak(teamID, date, session)
-    teamFeatures["opponent_outcome_streak"] = get_outcome_streak(opponentID, date, session)
-    
-    teamFeatures["home_side_form"] = get_home_away_form(teamID, thisSide, date, session)
-    teamFeatures["away_side_form"] = get_home_away_form(opponentID, otherSide, date, session)
-    
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print(f"Recent form: {elapsed_time:.2f} seconds")
-    
-    start_time = time.time()
     # H2H
     matches = query_H2H(teamID, opponentID, date, session)
     outcomes = get_outcome_distribution(teamID, matches)
@@ -94,12 +53,11 @@ def features_for_model0(teamID, opponentID, season, thisSide, date, session):
     teamFeatures["clean_sheet_rate_h2h"] = get_clean_sheet_rate_h2h(teamID, matches)
     teamFeatures["over_under_2_5"] = get_over_under_2_5(matches)
     teamFeatures["outcome_streak_h2h"] = get_outcome_streak_h2h(teamID, matches)
-    
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print(f"H2H: {elapsed_time:.2f} seconds")
 
-    return [teamFeatures[key] for key in teamFeatures.keys()]
+    for key in teamFeatures.keys():
+        features.append(teamFeatures[key])
+    
+    return features
 
 def features(teamID, opponentID, date, session):
   

@@ -84,8 +84,64 @@ def get_combined_team_stats(team_ids, season, sides, date, session):
                 for key in ["win_count", "draw_count", "loss_count", "clean_sheet_count"]:
                     stats[key] = stats[key] / match_count
 
-    return team_stats
+    teamFeatures = {}
+    # Extracting the stats for each team
+    for stat_type in ["match_count", "total_goals", "total_conceded_goals", "total_goal_difference", "win_count", "draw_count", "loss_count", "clean_sheet_count"]:
+        teamFeatures[f"team_side1_{stat_type}_season"] = team_stats[team_ids[0]][sides[0]][stat_type]
+        teamFeatures[f"team_side2_{stat_type}_season"] = team_stats[team_ids[0]][sides[1]][stat_type]
+        teamFeatures[f"opponent_side1_{stat_type}_season"] = team_stats[team_ids[1]][sides[1]][stat_type]
+        teamFeatures[f"opponent_side2_{stat_type}_season"] = team_stats[team_ids[1]][sides[0]][stat_type]
 
+    # Calculating the average values
+    for stat_type in ["total_goals", "total_conceded_goals", "total_goal_difference"]:
+        avg_type = stat_type.replace("total_", "average_")
+        teamFeatures[f"team_side1_{avg_type}_season"] = teamFeatures[f"team_side1_{stat_type}_season"] / teamFeatures["team_side1_match_count_season"] if teamFeatures["team_side1_match_count_season"] > 0 else 0
+        teamFeatures[f"team_side2_{avg_type}_season"] = teamFeatures[f"team_side2_{stat_type}_season"] / teamFeatures["team_side2_match_count_season"] if teamFeatures["team_side2_match_count_season"] > 0 else 0
+        teamFeatures[f"opponent_side1_{avg_type}_season"] = teamFeatures[f"opponent_side1_{stat_type}_season"] / teamFeatures["opponent_side1_match_count_season"] if teamFeatures["opponent_side1_match_count_season"] > 0 else 0
+        teamFeatures[f"opponent_side2_{avg_type}_season"] = teamFeatures[f"opponent_side2_{stat_type}_season"] / teamFeatures["opponent_side2_match_count_season"] if teamFeatures["opponent_side2_match_count_season"] > 0 else 0
+
+    # Calculating the win, draw, loss, and clean sheet rates
+    for stat_type in ["win_count", "draw_count", "loss_count", "clean_sheet_count"]:
+        rate_type = stat_type.replace("_count", "_rate")
+        teamFeatures[f"team_side1_{rate_type}_season"] = teamFeatures[f"team_side1_{stat_type}_season"]
+        teamFeatures[f"team_side2_{rate_type}_season"] = teamFeatures[f"team_side2_{stat_type}_season"]
+        teamFeatures[f"opponent_side1_{rate_type}_season"] = teamFeatures[f"opponent_side1_{stat_type}_season"]
+        teamFeatures[f"opponent_side2_{rate_type}_season"] = teamFeatures[f"opponent_side2_{stat_type}_season"]
+    
+    # Adding win rate features
+    teamFeatures["team_side1_winrate_season"] = teamFeatures["team_side1_win_count_season"] / teamFeatures["team_side1_match_count_season"] if teamFeatures["team_side1_match_count_season"] != 0 else 0
+    teamFeatures["team_side2_winrate_season"] = teamFeatures["team_side2_win_count_season"] / teamFeatures["team_side2_match_count_season"] if teamFeatures["team_side2_match_count_season"] != 0 else 0
+    teamFeatures["opponent_side1_winrate_season"] = teamFeatures["opponent_side1_win_count_season"] / teamFeatures["opponent_side1_match_count_season"] if teamFeatures["opponent_side1_match_count_season"] != 0 else 0
+    teamFeatures["opponent_side2_winrate_season"] = teamFeatures["opponent_side2_win_count_season"] / teamFeatures["opponent_side2_match_count_season"] if teamFeatures["opponent_side2_match_count_season"] != 0 else 0
+    
+    data_points = [
+        teamFeatures["team_side1_average_goals_season"],
+        teamFeatures["team_side2_average_goals_season"],
+        teamFeatures["opponent_side1_average_goals_season"],
+        teamFeatures["opponent_side2_average_goals_season"],
+
+        teamFeatures["team_side1_average_conceded_goals_season"],
+        teamFeatures["team_side2_average_conceded_goals_season"],
+        teamFeatures["opponent_side1_average_conceded_goals_season"],
+        teamFeatures["opponent_side2_average_conceded_goals_season"],
+
+        teamFeatures["team_side1_average_goal_difference_season"],
+        teamFeatures["team_side2_average_goal_difference_season"],
+        teamFeatures["opponent_side1_average_goal_difference_season"],
+        teamFeatures["opponent_side2_average_goal_difference_season"],
+        
+        teamFeatures["team_side1_winrate_season"],
+        teamFeatures["team_side2_winrate_season"],
+        teamFeatures["opponent_side1_winrate_season"],
+        teamFeatures["opponent_side2_winrate_season"],
+
+        teamFeatures["team_side1_clean_sheet_rate_season"],
+        teamFeatures["team_side2_clean_sheet_rate_season"],
+        teamFeatures["opponent_side1_clean_sheet_rate_season"],
+        teamFeatures["opponent_side2_clean_sheet_rate_season"]
+    ]
+
+    return data_points
 
 # Player info
 def get_average_player_rating(teamID, session):
@@ -128,17 +184,10 @@ def get_average_player_value(teamID, session):
     return int(sum(playerVals) / len(playerVals))
 
 # Recent form
-def get_points_won_ratio(teamID, date, session):
+def get_points_won_ratio(teamID, matches):
     """
     Returns the points won ratio for teamID the last 3, 5 and 10 matches
     """
-    matches = session.query(Matches).filter(
-        and_(
-            or_(Matches.home_team_id == teamID, Matches.away_team_id == teamID),
-            Matches.date < date
-        )
-    ).order_by(Matches.date.desc()).limit(10).all()
-
     points_won = {3: 0, 5: 0, 10: 0}
     match_count = {3: 0, 5: 0, 10: 0}
 
@@ -165,18 +214,10 @@ def get_points_won_ratio(teamID, date, session):
 
     return points_won_ratio[3], points_won_ratio[5], points_won_ratio[10]
 
-def get_outcome_streak(teamID, date, session):
+def get_outcome_streak(teamID, matches):
     """
     Returns the winning/losing streak going in to a match
     """            
-    matches = session.query(Matches).filter(
-        or_(
-            Matches.home_team_id == teamID,
-            Matches.away_team_id == teamID
-        ),
-        Matches.date < date
-    ).order_by(Matches.date.desc()).all()
-
     if len(matches) == 0:
         return 0
 
@@ -194,32 +235,26 @@ def get_outcome_streak(teamID, date, session):
 
     return streak
 
-def get_home_away_form(teamID, side, date, session):
+def get_home_away_form(teamID, side, matches):
     """
     Returns the form from the last 5 home/away matches as wins/total
     """
     if side not in ["home", "away"]:
         raise ValueError("Invalid side value. Accepted values are 'home' or 'away'.")
 
-    team_column = "home_team_id" if side == "home" else "away_team_id"
+    # Filter matches based on teamID and side
+    filtered_matches = [
+        match for match in matches
+        if (match.home_team_id == teamID and side == "home") or (match.away_team_id == teamID and side == "away")
+    ]
 
-    matches = (
-        session.query(Matches)
-        .filter(
-            and_(
-                getattr(Matches, team_column) == teamID,
-                Matches.date < date
-            )
-        )
-        .order_by(Matches.date.desc())
-        .limit(5)
-        .all()
-    )
+    # Keep only the last 5 matches
+    filtered_matches = filtered_matches[:5]
 
     wins = 0
-    total_matches = len(matches)
+    total_matches = len(filtered_matches)
 
-    for match in matches:
+    for match in filtered_matches:
         if side == "home" and match.home_goals > match.away_goals:
             wins += 1
         elif side == "away" and match.away_goals > match.home_goals:
