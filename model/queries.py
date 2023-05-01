@@ -6,6 +6,19 @@ from databaseClasses import *
 
 from sqlalchemy import and_, or_
 
+def query_recent_form(teamID, opponentID, date, session):
+    matches = session.query(Matches).filter(
+        and_(
+            or_(
+                Matches.home_team_id.in_([teamID, opponentID]),
+                Matches.away_team_id.in_([teamID, opponentID]),
+            ),
+            Matches.date < date
+        )
+    ).order_by(Matches.date.desc()).all()
+    
+    return matches
+
 def query_H2H(teamID, opponentID, date, session):
     
     matches = session.query(Matches).filter(
