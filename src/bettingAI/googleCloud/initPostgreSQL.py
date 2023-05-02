@@ -4,7 +4,7 @@ import json
 import sqlalchemy
 from google.cloud.sql.connector import Connector
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "../../keys/googleCloudKey.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "../../../keys/googleCloudKey.json"
 
 
 def initPostgreSQL():

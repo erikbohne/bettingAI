@@ -1,5 +1,6 @@
-writer/__pycache__/
-writer/drop.py
+src/bettingAI/writer/drop.py
+src/bettingAI/writer/editTable.py
+src/bettingAI/writer/query.py
 __pycache__/
 *.pyc
 *.pyo
