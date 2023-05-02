@@ -8,8 +8,8 @@ from sqlalchemy.sql import func
 
 from bettingAI.googleCloud.initPostgreSQL import initPostgreSQL
 from bettingAI.writer.databaseClasses import *
-from bettingAI.model.getInputs import *
-from bettingAI.model.queries import *
+from bettingAI.processing.getInputs import *
+from bettingAI.processing.queries import *
 
 
 def features_for_model0(teamID, opponentID, season, thisSide, date, session):

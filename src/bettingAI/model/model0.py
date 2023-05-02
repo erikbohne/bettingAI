@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from sklearn.utils import shuffle
 
 from bettingAI.googleCloud.initPostgreSQL import initPostgreSQL
-from bettingAI.model.features import features_for_model0, labels
+from bettingAI.processing.features import features_for_model0, labels
 
 
 # HYPERPARAMETERES

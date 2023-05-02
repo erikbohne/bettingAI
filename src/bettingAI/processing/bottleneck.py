@@ -4,7 +4,7 @@ from io import StringIO
 from datetime import datetime
 
 from bettingAI.model.model0 import initSession
-from bettingAI.model.features import features_for_model0
+from bettingAI.processing.features import features_for_model0
 
 date = datetime(year=2023, month=4, day=26)
 session = initSession()

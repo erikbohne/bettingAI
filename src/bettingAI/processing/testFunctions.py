@@ -5,7 +5,7 @@ from datetime import datetime
 from colorama import Fore
 from sqlalchemy.orm import sessionmaker
 
-from bettingAI.model.getInputs import *
+from bettingAI.processing.getInputs import *
 from bettingAI.googleCloud.initPostgreSQL import initPostgreSQL
 
 # Teams and seasons to test

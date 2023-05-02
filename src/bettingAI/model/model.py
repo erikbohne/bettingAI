@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from sklearn.utils import shuffle
 
 from bettingAI.googleCloud.initPostgreSQL import initPostgreSQL
-from bettingAI.model.features import features, labels
+from bettingAI.processing.features import features, labels
 
 
 def main(session: sqlalchemy.orm.Session) -> None:

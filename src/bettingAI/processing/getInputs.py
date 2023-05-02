@@ -6,7 +6,7 @@ from datetime import timedelta
 from sqlalchemy import and_, or_
 
 from bettingAI.writer.databaseClasses import *
-from bettingAI.model.helpers import euros_to_number, get_outcome
+from bettingAI.processing.helpers import euros_to_number, get_outcome
 
 
 def get_combined_team_stats(team_ids, season, sides, date, session):
