@@ -8,8 +8,8 @@ from sqlalchemy.sql import func
 
 from bettingAI.googleCloud.initPostgreSQL import initPostgreSQL
 from bettingAI.writer.databaseClasses import *
-from bettingAI.processing.getInputs import *
-from bettingAI.processing.queries import *
+from getInputs import *
+from queries import *
 
 
 def features_for_model0(teamID, opponentID, season, thisSide, date, session):
@@ -147,19 +147,4 @@ def labels(matchID: int, team_id: int, session) -> List[int]:
 
 if __name__ == "__main__":
 
-    # Connect to database
-    engine = initPostgreSQL()
-    Base.metadata.bind = engine
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    test1 = {
-        "teamID": 8456,
-        "opponentID": 9825,
-        "date": datetime(year=2023, month=4, day=26),
-    }
-
-    test = features(session, test1)
-
-    for key in test.keys():
-        print(key, test[key])
+    raise SyntaxError("features.py is only a file containing feature extraction functions.")
