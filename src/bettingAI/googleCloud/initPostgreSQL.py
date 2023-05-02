@@ -2,9 +2,10 @@ import os
 import json
 
 import sqlalchemy
+from sqlalchemy.orm import sessionmaker
 from google.cloud.sql.connector import Connector
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "../../../keys/googleCloudKey.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "../../../../keys/googleCloudKey.json"
 
 
 def initPostgreSQL():
@@ -12,7 +13,7 @@ def initPostgreSQL():
     Connects and initializes PostgreSQL
     """
     # Import database creditations
-    creds = json.load(open("../../keys/postgreSQLKey.json"))
+    creds = json.load(open("../../../../keys/postgreSQLKey.json"))
 
     def getConnection():
         connector = Connector()
@@ -33,3 +34,8 @@ def initPostgreSQL():
         return engine
     except Exception as e:  # Connection failed
         return None
+    
+def initSession() -> sqlalchemy.orm.Session:
+    connection = initPostgreSQL()
+    Session = sessionmaker(connection)
+    return Session()
