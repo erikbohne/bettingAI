@@ -11,7 +11,7 @@ from features import features_for_model0, labels
 def main(session):
     
     # Get the raw match ids and processed match ids to figure out what matches to process
-    rawMatches = session.execute(text("SELECT id, home_team_id, away_team_id, season, date FROM matches")).fetchall()
+    rawMatches = session.execute(text("SELECT id, home_team_id, away_team_id, league_id, season, date FROM matches")).fetchall()
     processedMatches = session.execute(text("SELECT DISTINCT match_id FROM processed_for_model0")).fetchall()
     print(
         f"""
@@ -23,14 +23,16 @@ def main(session):
     processedMatchIDs = set([match[0] for match in processedMatches]) # convert processedMatches to a set for faster lookup
     rawMatches = [match for match in rawMatches if match[0] not in processedMatchIDs] # filter out the matches that have already been processed
             
-    for matchID, teamID, opponentID, season, date in tqdm(rawMatches, desc="Processing matches"):
+    for matchID, teamID, opponentID, leagueID, season, date in tqdm(rawMatches, desc="Processing matches"):
         team1 = Processed(
             match_id = matchID,
+            league_id = leagueID,
             inputs = features_for_model0(teamID, opponentID, season, "home", date, session),
             labels = labels(matchID, teamID, session)
         )
         team2 = Processed(
             match_id = matchID,
+            league_id = leagueID,
             inputs = features_for_model0(opponentID, teamID, season, "away", date, session),
             labels = labels(matchID, opponentID, session)
         )
