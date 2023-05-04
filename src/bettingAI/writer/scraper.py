@@ -144,6 +144,35 @@ def get_match_info(
         "maininfo": mainInfo,
         "statistics": statistics,
     }, playerPerformance
+    
+def get_next_match_info(
+    url: str,
+) -> Union[bool, Dict[Any, Any]]:
+    """
+    Returns a necessary info about upcoming matches
+    """
+    # Request page
+    tokenized = tokenize_page("https://www.fotmob.com" + url, match=True)
+
+    # Get time and date of match
+    dtg = gather_dtg(tokenized[:50])
+
+    # Check if match is in the past
+    today = datetime.date.today()  # current day
+    difference = today - dtg.date()  # find time delta
+    if not -7 <= difference.days < 0:  # makes sure the game is within a week ahead of time
+        return False
+
+    info = gather_next_match_info(tokenized[:200])
+    
+    if info is not None:
+        return {
+            "teamID" : info[0],
+            "opponentID" : info[1],
+            "date" : dtg
+        }
+    else:
+        return False
 
 
 def get_player_bio(url: str) -> Dict[str, Union[Dict[str, Any], List]]:

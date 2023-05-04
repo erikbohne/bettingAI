@@ -164,10 +164,11 @@ class MatchStats(Base):
     ground_duels_won = Column(Integer)
     aerial_duels_won = Column(Integer)
     successfull_dribbles = Column(Integer)
-    
+   
 class Processed(Base):
     __tablename__ = "processed_for_model0"
     id = Column(Integer, primary_key=True)
-    match_id = Column(Integer)
+    league_id = Column(Integer, ForeignKey("leagues.id"))
+    match_id = Column(Integer, ForeignKey("matches.id"))
     inputs = Column(ARRAY(Float))
     labels = Column(ARRAY(Integer))

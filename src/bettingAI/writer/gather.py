@@ -488,3 +488,20 @@ def gather_player_performance(information: List[str]) -> Dict[str, Any]:
 
     # Return a dict containing all players
     return playerPerformance
+
+def gather_next_match_info(information):
+    """
+    Returns team ids for the upcoming match
+    """
+    ids = []
+    nextNumber = False
+    for info in information:
+        if info == "homeTeam" or info == "awayTeam":
+            nextNumber = True
+        if info[0] == ":" and nextNumber:
+            ids.append(info[1:])
+            if len(ids) == 2:
+                return ids
+            nextNumber = False
+            
+    return None
