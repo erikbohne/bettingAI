@@ -6,7 +6,7 @@ Norsk Tipping is the sole state-owned gambling company in Norway, operating lott
 In order to gain revenue on betting you have to beat the bookmarker. The task of the betting AI is therefor to find the best betting deals using a simple equation.
 
 ```
-expected value = (revenue * probability) - bet
+expected value = (odds / real odds) - 1
 if expecpected value > 0:
     place bet
 else:

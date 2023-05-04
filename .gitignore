@@ -1,14 +1,12 @@
 src/bettingAI/writer/drop.py
 src/bettingAI/writer/editTable.py
 src/bettingAI/writer/query.py
+src/bettingAI/model/models
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .DS_Store
-writer/editTable.py
-writer/logs/
-writer/query.py
 
 # Distribution / packaging
 .Python
