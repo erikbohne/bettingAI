@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 # HYPERPARAMETERS
 BATCH_SIZE = 32
-EPOCHS = 10
+EPOCHS = 20
 
 def main():
     X_train, X_test, y_train, y_test = load_data()
@@ -32,12 +32,14 @@ def main():
     print("Test loss: ", scores[0])
     print("Test accuracy: ", scores[1])
     
+    predict_matches(model)
+    # Save the trained model as an .h5 file
+    #model.save('model/model3.h5')
     
-
 def load_data():
     session = initSession()
     matches = session.execute(text("SELECT inputs, labels FROM processed_for_model0"))
-    data, labels = zip(*[(match[0], match[1]) for match in matches])
+    data, labels = zip(*[(match[0], [match[1][0], match[1][1], match[1][2]]) for match in matches])
     
     data, labels = np.array(data), np.array(labels)
     
@@ -58,12 +60,28 @@ def bettingAI_model0():
     
     hidden_3 = Dense(32, activation='relu')(dropout_2)
     
-    output_layer = Dense(8, activation='softmax')(hidden_3)
+    output_layer = Dense(3, activation='softmax')(hidden_3)
 
     model = Model(inputs=input_layer, outputs=output_layer)
     model.summary()
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
+
+def predict_matches(model):
+    session = initSession()
+    match_ids = [3901207, 3901208, 3901262, 3901268, 3901269]
+    
+    for match_id in match_ids:
+        # Retrieve the input features for the match
+        match = session.execute(text("SELECT inputs FROM processed_for_model0 WHERE match_id=:match_id"), {"match_id": match_id}).first()
+
+        if match:
+            input_data = np.array(match[0]).reshape(1, -1)  # Reshape the input data into the expected format
+            probabilities = model.predict(input_data)  # Get the predicted probabilities for the match
+            real_odds = 1 / probabilities
+            print(f"Match ID {match_id}: {probabilities} and oddds {real_odds}")
+        else:
+            print(f"Match ID {match_id} not found.")
 
     
 if __name__ == "__main__":
