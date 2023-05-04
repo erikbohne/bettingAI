@@ -8,8 +8,8 @@ import datetime
 from time import strptime
 from typing import List, Optional, Dict, Union, Any, Tuple
 
-import request
-from bs4 import BeautifulSoups
+import requests
+from bs4 import BeautifulSoup
 from nltk.tokenize import word_tokenize
 
 # My own libraries

@@ -2,7 +2,6 @@ import datetime as dt
 import json
 import logging
 import os
-import sys
 from collections import Counter
 from typing import Dict, List, Optional
 
