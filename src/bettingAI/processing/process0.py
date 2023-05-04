@@ -11,7 +11,7 @@ from features import features_for_model0, labels
 def main(session):
     
     # Get the raw match ids and processed match ids to figure out what matches to process
-    rawMatches = session.execute(text("SELECT id, home_team_id, away_team_id, season, date FROM matches WHERE matches.league_id = 47")).fetchall()
+    rawMatches = session.execute(text("SELECT id, home_team_id, away_team_id, season, date FROM matches")).fetchall()
     processedMatches = session.execute(text("SELECT DISTINCT match_id FROM processed_for_model0")).fetchall()
     print(
         f"""
@@ -35,7 +35,8 @@ def main(session):
             labels = labels(matchID, opponentID, session)
         )
         try:
-            session.add(team1, team2)
+            session.add(team1)
+            session.add(team2)
             session.commit()
         except Exception as e:
             session.rollback()
