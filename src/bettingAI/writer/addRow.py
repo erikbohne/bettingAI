@@ -25,7 +25,7 @@ def add_match(
         home_goals=matchStats["maininfo"]["homescore"],
         away_goals=matchStats["maininfo"]["awayscore"],
     )
-    if matchStats["statistics"] != {}:
+    if matchStats["statistics"] is not None:
         # home side statistics
         homeSide = MatchStats(
             match_id=id,

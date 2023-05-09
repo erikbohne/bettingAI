@@ -19,6 +19,7 @@ from bettingAI.writer.scraper import (
     get_match_links,
     get_player_links,
     get_player_bio,
+    get_match_info
 )
 
 
@@ -27,6 +28,8 @@ def main(session: sqlalchemy.orm.Session) -> None:
     # Gather a list of the league ids
     leagues = session.query(Leagues).all()
     leagueIDs = [(league.id, league.year_span) for league in leagues]
+    
+    leagueIDs = [(48, 2)]
 
     notInDatabase = {"matches": {}, "players": {}}
 
@@ -48,7 +51,8 @@ def main(session: sqlalchemy.orm.Session) -> None:
                 if match not in database:
                     notInDatabase["matches"][id][season].append(match)
                     try:
-                        matchStats, playerStats = get_match_info(str(match))
+                        matchStats, playerStats = get_match_info(str(f"/match/{match}"))
+                        print(match, matchStats["league"])
                         match, homeSide, awaySide = add_match(match, season, matchStats)
                         session.add(match)  # add main info
                         session.add(homeSide)  # add home stats
@@ -58,6 +62,7 @@ def main(session: sqlalchemy.orm.Session) -> None:
                     except Exception as e:
                         session.rollback()
                         print(f"{match} -> {e}")
+                        #traceback.print_exc()
 
         continue
         teams = session.query(Teams).filter(Teams.league_id == id)

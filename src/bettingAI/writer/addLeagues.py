@@ -21,12 +21,12 @@ def add_leagues() -> None:
     session = Session()
 
     league1 = Leagues(
-        id="204",
-        name="2. divisjon",
-        country="Norway",
-        n_teams=28,
+        id="208",
+        name="3. Liga",
+        country="Germany",
+        n_teams=20,
         level=3,
-        year_span=1,
+        year_span=2,
     )
     session.add(league1)
 

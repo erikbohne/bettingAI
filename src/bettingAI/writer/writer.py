@@ -94,6 +94,9 @@ def runner(session: sqlalchemy.orm.Session) -> None:
         seasons = SEASONS[league["year_span"]]
         for season in seasons:  # iterate over last ten seasons for the league
             logger.info(f"Begun on {season} season for {league['name']}")
+            if league["level"] > 2:
+                print("Will not add leagues with lower lever than 2")
+                continue
 
             fixtures = get_match_links(
                 league["id"], season
@@ -137,11 +140,9 @@ def runner(session: sqlalchemy.orm.Session) -> None:
                     exceptions[league["id"]][f"{type(e)} : {e}"] += 1
 
                 # Add player performance stats do database
-                for (
-                    player
-                ) in (
-                    playerStats.keys()
-                ):  # iterate over all players returned from gather_player_performance()
+                if playerStats is None:
+                    continue
+                for player in playerStats.keys():  # iterate over all players returned from gather_player_performance()
                     try:
                         trackData["psExplored"] += 1
                         playerPerformance = add_player_performance(

@@ -34,20 +34,13 @@ def gather_league(information: List[str]) -> Dict[str, Any]:
     Returns league name and id for competition
     """
     for i in range(50):
-        if information[i] == "leagueId":
-            id = information[i + 1][
-                1 : len(information[i])
-            ]  # removing colon in front of ID -> ':47' -> '47'
-            for j in range(10):
-                if information[i + j] == "leagueRoundName":
-                    name = " ".join([information[i + n] for n in range(3, j)])
-                    break
-
+        if information[i] == "parentLeagueId":
+            id = information[i + 1][1:]  # removing colon in front of ID -> ':47' -> '47'
+            break
     try:
-        return {"name": name, "id": id}
+        return {"id": id}
     except UnboundLocalError:
-        return {"name": None, "id": None}
-
+        return {"id": None}
 
 def gather_main_info(information: List[str]) -> Dict[str, Any]:
     """
@@ -207,7 +200,7 @@ def gather_match_statistics(information: List[str]) -> Dict[str, Any]:
 
     start = find_start_index(information)
     if not start:
-        raise IndexError("Unable to find the start index.")
+        return None
 
     # Shots
     shots_keys = [

@@ -136,7 +136,10 @@ def get_match_info(
     statistics = gather_match_statistics(tokenized[:6000])
 
     # Get player stats from match
-    playerPerformance = gather_player_performance(tokenized[2000:])
+    if statistics is not None:
+        playerPerformance = gather_player_performance(tokenized[2000:])
+    else:
+        playerPerformance = None
 
     return {
         "dtg": dtg,
