@@ -5,6 +5,7 @@ from sqlalchemy import (
     String,
     Float,
     ARRAY,
+    Boolean,
     ForeignKey,
     TIMESTAMP,
     UniqueConstraint,
@@ -164,7 +165,8 @@ class MatchStats(Base):
     ground_duels_won = Column(Integer)
     aerial_duels_won = Column(Integer)
     successfull_dribbles = Column(Integer)
-   
+
+# Processed data for model training
 class Processed(Base):
     __tablename__ = "processed_for_model0"
     id = Column(Integer, primary_key=True)
@@ -172,3 +174,28 @@ class Processed(Base):
     match_id = Column(Integer, ForeignKey("matches.id"))
     inputs = Column(ARRAY(Float))
     labels = Column(ARRAY(Integer))
+    
+
+# Tables for data to API
+class Upcoming(Base):
+    __tablename__ = "upcoming_matches"
+    id = Column(Integer, primary_key=True)
+    date = Column(TIMESTAMP, nullable=False)
+    match_id = Column(Integer)
+    home_team_id = Column(Integer, ForeignKey("teams.id"))
+    away_team_id = Column(Integer, ForeignKey("teams.id"))
+    h = Column(Float)
+    u = Column(Float)
+    b = Column(Float)
+    value = Column(String)
+
+class Performance(Base):
+    __tablename__ = "model_performance"
+    id = Column(Integer, primary_key=True)
+    model_id = Column(Integer)
+    bet_n = Column(Integer)
+    odds = Column(Float)
+    placed = Column(Integer)
+    outcome = Column(Boolean)
+    
+    __table_args__ = (UniqueConstraint("model_id", "bet_n", name="unique_bet_n_for_model"),)
