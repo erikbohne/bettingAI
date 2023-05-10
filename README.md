@@ -1,11 +1,12 @@
 # BettingAI
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebook/react/blob/main/LICENSE)
 > Can artificial intelligence beat Norsk Tipping?
 
 Norsk Tipping is the sole state-owned gambling company in Norway, operating lottery, sports betting, and instant games exclusively. As a government-controlled entity, it ensures responsible gaming entertainment while maintaining a monopoly on gambling within the country.
 
 In order to gain revenue on betting you have to beat the bookmarker. The task of the betting AI is therefor to find the best betting deals using a simple equation.
 
-```
+```python
 expected value = (odds / real odds) - 1
 if expecpected value > 0:
     place bet
@@ -32,7 +33,7 @@ Betting AI project that includes gathering and processing data, training and tun
 
 ### Prerequisites
 Program uses mainly Python 3.X, for each of the modules you will find a **requirements.txt**. Run the following command in each modules to install the neccesary libraries: 
-```
+```bash
 pip install {module}/requirements.txt
 ```
 
@@ -70,7 +71,7 @@ values.py # stores some values used in scraper.py
 
 To run the module you only have to run writer.py and the main functionalities of the program will work itself through all the leagues like this:
 
-```
+```python
 fetch all leagues from db
 
 for each league:
