@@ -32,7 +32,8 @@ async def get_matches():
             away.name as away_team, 
             h as h_odds, 
             u as u_odds, 
-            b as b_odds, 
+            b as b_odds,
+            strength as strength, 
             value as value 
         FROM upcoming_matches
         INNER JOIN teams as home ON upcoming_matches.home_team_id = home.id
@@ -55,13 +56,14 @@ async def get_matches():
             "h": match["h_odds"],
             "u": match["u_odds"],
             "b": match["b_odds"],
+            "strength": match["strength"],
             "value": match["value"],
         })
 
     return JSONResponse(content=formatted_matches)
 
 @app.get("/performance")
-async def get_matches():
+async def performance():
     session = initSession()
     result_proxy = session.execute(text(
         "SELECT model_id, bet_n, odds, placed, outcome FROM model_performance ORDER BY model_id, bet_n;"
