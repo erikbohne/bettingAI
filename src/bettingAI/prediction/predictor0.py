@@ -4,6 +4,7 @@ Program to test model0 on round 27 in Premier League 2023
 from bettingAI.googleCloud.initPostgreSQL import initSession
 from tensorflow.keras.models import load_model
 import matplotlib.pyplot as plt
+from helpers import *
 from sqlalchemy import text
 import numpy as np
 import json
@@ -31,7 +32,6 @@ def main(model, session):
                 input_data = np.array(match_input[0]).reshape(1, -1)  # Reshape the input data into the expected format
                 probabilities = model.predict(input_data)  # Get the predicted probabilities for the match
                 real_odds = calculate_real_odds(probabilities[0])
-                
                 # Compare and find value in Norsk Tipping Odds
                 advice = find_value(real_odds, rounds[round][match][:3])
                 
@@ -42,16 +42,17 @@ def main(model, session):
                         if rounds[round][match][3] == i:
                             bet_won += 1
                             money_won += (rounds[round][match][i] - 1) * 250
-                            print(match, rounds[round][match][i])
                         else:
                             money_won -= 250
                         
                         history.append(money_won)   
-    #print(history)                   
+                                         
     print(f"Result -> {placed_bets} ({(bet_won / placed_bets):.2f}) and balance {money_won}")
+    print(f"Lowest balance -> {min(history)}")
+    print(f"Highest balance -> {max(history)}")
             
             
 if __name__ == "__main__":
     session = initSession()
-    model = load_model('../model/models/model.h5')
+    model = load_model('../model/models/best_model.h5')
     main(model, session)
