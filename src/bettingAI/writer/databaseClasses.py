@@ -1,16 +1,16 @@
 from sqlalchemy import (
-    create_engine,
+    ARRAY,
+    TIMESTAMP,
+    Boolean,
     Column,
+    Float,
+    ForeignKey,
     Integer,
     String,
-    Float,
-    ARRAY,
-    Boolean,
-    ForeignKey,
-    TIMESTAMP,
     UniqueConstraint,
+    create_engine,
 )
-from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 
@@ -166,6 +166,7 @@ class MatchStats(Base):
     aerial_duels_won = Column(Integer)
     successfull_dribbles = Column(Integer)
 
+
 # Processed data for model training
 class Processed(Base):
     __tablename__ = "processed_for_model0"
@@ -174,28 +175,38 @@ class Processed(Base):
     match_id = Column(Integer, ForeignKey("matches.id"))
     inputs = Column(ARRAY(Float))
     labels = Column(ARRAY(Integer))
-    
+
 
 # Tables for data to API
-class Upcoming(Base):
-    __tablename__ = "upcoming_matches"
-    id = Column(Integer, primary_key=True)
-    date = Column(TIMESTAMP, nullable=False)
-    match_id = Column(Integer)
-    home_team_id = Column(Integer, ForeignKey("teams.id"))
-    away_team_id = Column(Integer, ForeignKey("teams.id"))
-    h = Column(Float)
-    u = Column(Float)
-    b = Column(Float)
-    value = Column(String)
-
 class Performance(Base):
-    __tablename__ = "model_performance"
+    __tablename__ = "performance"
     id = Column(Integer, primary_key=True)
     model_id = Column(Integer)
-    bet_n = Column(Integer)
+    bet_type = Column(String)
     odds = Column(Float)
     placed = Column(Integer)
     outcome = Column(Boolean)
     
-    __table_args__ = (UniqueConstraint("model_id", "bet_n", name="unique_bet_n_for_model"),)
+class Schedule(Base):
+    __tablename__ = "schedule"
+    match_id = Column(Integer, primary_key=True)
+    date = Column(TIMESTAMP, nullable=False)
+    season = Column(String)
+    league_id = Column(Integer, ForeignKey("leagues.id"))
+    home_team_id = Column(Integer, ForeignKey("teams.id"))
+    away_team_id = Column(Integer, ForeignKey("teams.id"))
+    
+class Upcoming(Base):
+    __tablename__ = "upcoming"
+    id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey("schedule.match_id"))
+    inputs = Column(ARRAY(Float))
+
+class Bets(Base):
+    __tablename__ = "bets"
+    id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey("schedule.match_id"))
+    bet_type = Column(String)  # hub, btts, over/under
+    odds = Column(ARRAY(Float)) # [2.34, 2.50, 1.80] or [1.86, 1.90]
+    value = Column(String)
+    strength = Column(Float) # (bookmakers odds) / (ai model odds)
