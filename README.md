@@ -2,7 +2,7 @@
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebook/react/blob/main/LICENSE) ![](https://img.shields.io/github/languages/top/erikbohne/bettingAI?color=purple) ![](https://img.shields.io/github/repo-size/erikbohne/bettingAI?color=gre) ![](https://img.shields.io/github/commit-activity/m/erikbohne/bettingAI?color=ff69b4) <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 [![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
-> Can artificial intelligence beat the bookies?
+> "Can artificial intelligence beat the bookies?"
 
 Bookmakers worldwide, including state-owned entities, contribute to the thriving, billion-dollar betting industry. They offer services like lottery and sports betting, while promoting responsible gaming. To profit from this industry, bettors must outsmart bookmakers, using AI systems to find the most favorable deals and beat the odds.
 
@@ -45,53 +45,19 @@ This will install all the necesarry packages for all modules in BettingAI.
 The project consists of **4** modules that each perform a specific tast in order to complete the BettingAI.
 
 ### Module 1 - Writer ✍🏽
-> Extracting data from fotmob.com into a PostgreSQL database using Google Cloud.
+> "Extracting data from fotmob.com into a PostgreSQL database using Google Cloud."
 
-In order to collect data about teams, players and matches without spending thousands of NOK on an API, crawling the web was the best option. **fotmob.com** is one of the leading fotball statistics website and was therefor a solid choice.
+The writer.py program is responsible for extracting and storing football data 📊 into a PostgreSQL database ⚙️. The program performs the following tasks:
 
-The writer module consists of the following directories, main- and helper files:
-```
-# directories
-reports/ # dir that stores reports
-logs/ # dir that stores logs
-
-# main files
-writer.py # main file that runs the module
-scraper.py # request and control scraping
-gather.py # scrapes a promted page
-
-# helper files
-databaseClasses.py # contains classes for database
-addRow.py # assigns values to a database class
-testFunctions.py # test all functions in writer.py, scraper.py and gather.py
-values.py # stores some values used in scraper.py
-```
-
-To run the module you only have to run writer.py and the main functionalities of the program will work itself through all the leagues like this:
-
-```python
-fetch all leagues from db
-
-for each league:
-
-    get a list of all the teams
-    find all matches and players for that team
-
-    for each match that is not in the db:
-        add statistics to db
-
-    for each player that is not up to date:
-        update player information
-```
-
-Each step that includes getting statistics or links utilizes scraper.py to find this information on fotmob.com in a cooperation between writer, scraper and gather.
-
-```
-writer.py -> scraper.py -> gather.py
-```
+1. Connects to the PostgreSQL database 🔗.
+2. For each league ⚽:
+    - Fetches team 🏃‍♂️ and player information 👤.
+    - Updates the database 🛠 with team and player data.
+    - Retrieves match information 🥅 for each season and stores it in the database.
+    - Gathers player performance statistics 📈 for each match and updates the database.
 
 ### Module 2 - Processing 📊
-> Transforming raw data into processed input for model training.
+> "Transforming raw data into processed input for model training."
 
 This program is designed to process raw match data from the database and prepare it for use in `model0`. It first initializes a connection to the database using `initSession()`, then fetches both raw and already processed match IDs. After calculating the difference between these two sets, the program identifies the matches that need to be processed.
 
@@ -102,68 +68,37 @@ For each match, the program generates features and labels using the `features_fo
 2. Extract more features
 
 ### Module 3 - Model 🤖
-> Uses the historical data in the firebase databse to train a model
+> "Constructing, training, and evaluating the neural network for predicting football match outcomes 🧠⚽️"
 
-There are some important steps before actually creating the model. Those include data processing and feature engineering. First of all, i want to be sure that the data i am going to use is complete and correct. This means that any missing values or duplicate entries must be removed. Furthermore we want to extract certain features based on the data. We have to both identify the features we already have present as well as creating new features based on the data that could be more informative to the model.
+In Module 3, we dive deep into the world of artificial intelligence, building a neural network to predict the outcomes of football matches with precision! 🎯🔮
 
-The input values are prepared through the processing and feature engineering. And after this process the input will look like this:
-```
-Statistics:
-    - Average goals scored per match (total/home/away) ✅
-    - Average goals conceded per match (total/home/away) ✅
-    - Goal difference per match (total/home/away) ✅
-    - Total wins, draws, and losses (total/home/away) ✅
-    - Clean sheet percentage (total/home/away) ✅
-    - Matches with more than 2.5 goals score (total/home/away)
+Here's what we do step by step 🔑:
 
-Player info:
-    - MVP score (based on importancy ranking)
-    - Average player rating ✅
-    - Average player age ✅
-    - Average player height ✅
-    - Average player market value ✅
+1. Load the data and split it into training and testing sets, ensuring we have a separate dataset for model evaluation 📚🔪
+Normalize the data using StandardScaler, which helps the model learn faster and perform better 📏✨
+2. Design a neural network model using Keras, complete with hidden layers, Batch Normalization, and Dropout to prevent overfitting and enhance generalization 🧩🚀
+3. Train the model using K-Fold Cross Validation, a technique that splits the data into multiple folds, ensuring more reliable model performance 🔄💪
+4. Evaluate the model on the test data and report loss and accuracy scores to understand how well it generalizes to unseen data 📈🎉
+5. Discover feature importance using permutation importance analysis, helping us understand which features have the most 6. significant impact on predictions 🌟🔍
+6. Save the trained model as an .h5 file, enabling us to use it in the future without retraining 🔐💾
 
-Recent form:
-    - Points won ratio in last 3, 5 and 10 matches ✅
-    - Current winning/losing streak ✅
-    - Home/away form ✅
-    - Average goals scored in last 3, 5, and 10 matches
-    - Average goals conceded in last 3, 5, and 10 matches
-    - Both teams to score (BTTS) percentage in last 3, 5, and 10 matches
-    - Clean sheet percentage in last 3, 5, and 10 matches
-    - Over/Under 2.5 goals percentage in last 3, 5, and 10 matches
-    - Form against top/bottom half teams in the league
-    - Points won against direct competitors (teams with similar league positions)
-    - Win percentage with/without key players in recent matches
-    - Scoring patterns (e.g., early/late goals, comebacks, goals after conceding)
-    - Average cards (yellow and red) in last 3, 5, and 10 matches
-    - Average fouls in last 3, 5, and 10 matches
-    - Average corners in last 3, 5, and 10 matches
-    - Set piece goals scored (free kicks, corners, penalties) in last 3, 5, and 10 matches
+Leveraging TensorFlow and Keras, Module 3 creates a deep learning model that learns from historical match data and identifies the most crucial features for accurate predictions. Get ready to revolutionize the world of football predictions with AI! 🚀🌐
 
-Head 2 Head:
-    - Outcome distribution (W%, D%, L%) ✅
-    - Side distribution (H%, D%, A%) ✅
-    - Most recent encounters (Last 2 years) ✅
-    - Average goals per match ✅
-    - Average goals conceded per match ✅
-    - Goal difference per match ✅
-    - Both teams to score (BTTS) percentage ✅
-    - Clean sheet percentage for each team ✅
-    - Over/Under 2.5 goals percentage ✅
-    - Winning/losing streak in head-to-head matches ✅
-
-Playstyle:
-    - 
-```
-
-
-*TODO*
 
 ### Module 4 - Prediction 🔮
 > Interface to get an overview over performance and bets
 
-*TODO*
+⚽ Module 4 works tirelessly, updating the data every 24 hours. It fetches upcoming matches within the next 5 days 📆 and grabs live odds for all leagues 🌐.
+
+Key steps 🔑:
+
+1. Find matches in the next 5 days 🗓️
+2. Get live odds for each league 🎲
+3. Update the `Upcoming` table with fresh match data 🔄
+4. Refresh the `Bets` table with new bet recommendations, odds, and strengths 📊
+5. Use the imported model to calculate advice and strength for each match 🧠
+
+With the help of **TensorFlow Keras**, our trusty model 🧙, and some handy helper functions, Module 4 makes sure you never miss an opportunity in the world of betting. 🎯
 
 ### Module 5 - API 🔗
 > Module to connect frontend and backend
@@ -179,7 +114,10 @@ The API also handles CORS (Cross-Origin Resource Sharing) to ensure compatibilit
 ## Contributing 🙋‍♂️
 > Pull requests are welcome
 
+We appreciate your interest in contributing! Please follow best practices and refer to the contribution template when submitting a pull request. Focus on improving the model's efficiency and check the 'Issues' tab for potential improvements. For questions, comment on the issues, and we'll respond promptly.
+
 ## License 🪪 • ![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)
+This project is licensed under the MIT License. This permissive license allows for reuse, modification, and distribution of the code, as long as the copyright notice and license text are included. The MIT License grants you the freedom to use the project in your own work, as well as contribute to its development and enhancement. Please review the [LICENSE](LICENSE) file for more details.
 
 ## Contributors ✨
 
