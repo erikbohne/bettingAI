@@ -1,6 +1,6 @@
 # BettingAI 🧠
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebook/react/blob/main/LICENSE) ![](https://img.shields.io/github/languages/top/erikbohne/bettingAI?color=purple) ![](https://img.shields.io/github/repo-size/erikbohne/bettingAI?color=gre) ![](https://img.shields.io/github/commit-activity/m/erikbohne/bettingAI?color=ff69b4) <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 > "Can artificial intelligence beat the bookies?"
 
@@ -129,8 +129,8 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <table>
   <tbody>
     <tr>
+        <td align="center" valign="top" width="14.28%"><a href="https://github.com/erikbohne"><img src="https://avatars.githubusercontent.com/u/79271528?v=4?s=100" width="100px;" alt="Erik Nymo Bohne"/><br /><sub><b>Erik Nymo Bohne</b></sub></a><br /><a href="https://github.com/erikbohne/bettingAI/commits?author=erikbohne" title="Code">💻</a> <a href="#data-erikbohne" title="Data">🔣</a> <a href="#ideas-erikbohne" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/erikbohne/bettingAI/commits?author=erikbohne" title="Documentation">📖</a> <a href="#research-erikbohne" title="Research">🔬</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Ahmed-Z-D"><img src="https://avatars.githubusercontent.com/u/78611096?v=4?s=100" width="100px;" alt="Ahmed Z-D"/><br /><sub><b>Ahmed Z-D</b></sub></a><br /><a href="#infra-Ahmed-Z-D" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/erikbohne"><img src="https://avatars.githubusercontent.com/u/79271528?v=4?s=100" width="100px;" alt="Erik Nymo Bohne"/><br /><sub><b>Erik Nymo Bohne</b></sub></a><br /><a href="https://github.com/erikbohne/bettingAI/commits?author=erikbohne" title="Code">💻</a> <a href="#data-erikbohne" title="Data">🔣</a> <a href="#ideas-erikbohne" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/erikbohne/bettingAI/commits?author=erikbohne" title="Documentation">📖</a> <a href="#research-erikbohne" title="Research">🔬</a></td>
     </tr>
   </tbody>
 </table>
