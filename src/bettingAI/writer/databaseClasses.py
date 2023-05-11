@@ -14,7 +14,6 @@ from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 
-
 class Leagues(Base):
     __tablename__ = "leagues"
     id = Column(Integer, primary_key=True)

@@ -26,18 +26,19 @@ async def get_matches():
     session = initSession()
     result_proxy = session.execute(text("""
         SELECT 
-            upcoming_matches.id, 
+            schedule.match_id as id, 
             date as time, 
             home.name as home_team, 
             away.name as away_team, 
-            h as h_odds, 
-            u as u_odds, 
-            b as b_odds,
+            odds[1] as h_odds, 
+            odds[2] as u_odds, 
+            odds[3] as b_odds,
             strength as strength, 
             value as value 
-        FROM upcoming_matches
-        INNER JOIN teams as home ON upcoming_matches.home_team_id = home.id
-        INNER JOIN teams as away ON upcoming_matches.away_team_id = away.id;
+        FROM schedule
+        INNER JOIN teams as home ON schedule.home_team_id = home.id
+        INNER JOIN teams as away ON schedule.away_team_id = away.id
+        INNER JOIN bets ON schedule.match_id = bets.match_id;
     """))
 
     # Fetch column names

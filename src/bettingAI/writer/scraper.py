@@ -31,6 +31,7 @@ def tokenize_page(url: str, match: Optional[bool] = False) -> List[str]:
     # Tokenize the text so it is iterable
     tokenized = [token for token in word_tokenize(text) if token not in notIncluded]
 
+    information = []
     if match:  # Get spesified data for matches
         i = 0
         for token in tokenized:
@@ -164,12 +165,17 @@ def get_next_match_info(
     today = datetime.date.today()  # current day
     difference = today - dtg.date()  # find time delta
     if not -7 <= difference.days < 0:  # makes sure the game is within a week ahead of time
-        return False
+        #return False
+        pass
 
     info = gather_next_match_info(tokenized[:200])
     
+    # Get competition name and id
+    league = gather_league(tokenized[10:100])
+    
     if info is not None:
         return {
+            "leagueID": league["id"],
             "teamID" : info[0],
             "opponentID" : info[1],
             "date" : dtg

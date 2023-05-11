@@ -1,53 +1,51 @@
-# BettingAI
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebook/react/blob/main/LICENSE)
-> Can artificial intelligence beat Norsk Tipping?
+# BettingAI 🧠
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebook/react/blob/main/LICENSE) ![](https://img.shields.io/github/languages/top/erikbohne/bettingAI?color=purple) ![](https://img.shields.io/github/repo-size/erikbohne/bettingAI?color=gre) ![](https://img.shields.io/github/commit-activity/m/erikbohne/bettingAI?color=ff69b4) <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
+> Can artificial intelligence beat the bookies?
 
-Norsk Tipping is the sole state-owned gambling company in Norway, operating lottery, sports betting, and instant games exclusively. As a government-controlled entity, it ensures responsible gaming entertainment while maintaining a monopoly on gambling within the country.
-
-In order to gain revenue on betting you have to beat the bookmarker. The task of the betting AI is therefor to find the best betting deals using a simple equation.
+Bookmakers worldwide, including state-owned entities, contribute to the thriving, billion-dollar betting industry. They offer services like lottery and sports betting, while promoting responsible gaming. To profit from this industry, bettors must outsmart bookmakers, using AI systems to find the most favorable deals and beat the odds.
 
 ```python
-expected value = (odds / real odds) - 1
+expected value = (bookmaker odds / real odds) - 1
 if expecpected value > 0:
     place bet
 else:
     do not place bet
 ```
 
-If you consistantly bet on outcomes that has an expected value of more than 0, you will, over time, generate a revenue. Altough the equation is simple, the task is not. Revenue is the bet times the bet, and the bet is how money you place on an outcome. The only variable in the equation BettingAI has to produce is the probability. And what is the solely most important key to predicting? **Data**
+Consistently betting on outcomes with a positive expected value will, over time, yield revenue. While the concept is simple, execution is more challenging. Revenue equals the bet amount squared, with the bet being the money placed on an outcome. The only variable Betting AI needs to determine is probability, which relies heavily on the most crucial element for accurate predictions: **Data**.
 
-Betting AI project that includes gathering and processing data, training and tuning a model and predicting outcomes.
+The Betting AI project involves collecting and processing data, training and fine-tuning a model, and predicting outcomes to help bettors make informed decisions.
 
-## Table of Contents
-- **[Installation](#installation)**
+## Table of Contents 📚
+- **[Prerequisites 🤓](#Prerequisites)**
 - **[Usage](#usage)**
-- **[Modules](#modules)**
-  - **[Module 1 - Writer](#module-1---writer)**
-  - **[Module 2 - Trainer](#module-2---trainer)**
-  - **[Module 3 - Predictor](#module-3---predictor)**
-  - **[Module 4 - Interface](#module-4---interface)**
-- **[Contributing](#contributing)**
-- **[License](#license)**
+- **[Modules ⚙️](#modules)**
+  - **[Module 1 - Writer ✍🏽](#module-1---writer)**
+  - **[Module 2 - Processing 📊](#module-3---processing)**
+  - **[Module 3 - Model 🤖](#module-2---model)**
+  - **[Module 4 - Prediction 🔮](#module-4---prediction)**
+  - **[Module 5 - API 🔗](#module-4---API)**
+- **[Contributing 🙋‍♂️](#contributing)**
+- **[License 🪪](#license)**
 
-## Installation
-
-### Prerequisites
-Program uses mainly Python 3.X, for each of the modules you will find a **requirements.txt**. Run the following command in each modules to install the neccesary libraries: 
+## Prerequisites 🤓
+In order to install the required packages make sure to start the virtual environment:
 ```bash
-pip install {module}/requirements.txt
+source venv/bin/activate
 ```
+And the install the required packages:
+```bash
+pip install -r requirements.txt
+```
+This will install all the necesarry packages for all modules in BettingAI.
 
-This will install all the necesarry packages for all modules in BettingAI
-
-
-## Usage
-To get the full expirience of the Betting AI you are ment to use the **4** modules, in the correct order. Check out each module to see what they do, how they work and how they are ment to be used.
-
-## Modules
+## Modules ⚙️
 The project consists of **4** modules that each perform a specific tast in order to complete the BettingAI.
 
-### Module 1 - Writer
-> Extracting data from fotmob.com into a PostgreSQL databse using Google Cloud.
+### Module 1 - Writer ✍🏽
+> Extracting data from fotmob.com into a PostgreSQL database using Google Cloud.
 
 In order to collect data about teams, players and matches without spending thousands of NOK on an API, crawling the web was the best option. **fotmob.com** is one of the leading fotball statistics website and was therefor a solid choice.
 
@@ -92,8 +90,18 @@ Each step that includes getting statistics or links utilizes scraper.py to find 
 writer.py -> scraper.py -> gather.py
 ```
 
+### Module 2 - Processing 📊
+> Transforming raw data into processed input for model training.
 
-### Module 2 - Trainer
+This program is designed to process raw match data from the database and prepare it for use in `model0`. It first initializes a connection to the database using `initSession()`, then fetches both raw and already processed match IDs. After calculating the difference between these two sets, the program identifies the matches that need to be processed.
+
+For each match, the program generates features and labels using the `features_for_model0()` and `labels()` functions, respectively. It then creates two instances of the Processed class, one for each team, and commits the processed data to the database. If an exception occurs during the commit process, the program rolls back the transaction and prints an error message.
+
+#### POTENTIAL IMPROVEMENTS 📈: 
+1. Efficiency - bring processing time down
+2. Extract more features
+
+### Module 3 - Model 🤖
 > Uses the historical data in the firebase databse to train a model
 
 There are some important steps before actually creating the model. Those include data processing and feature engineering. First of all, i want to be sure that the data i am going to use is complete and correct. This means that any missing values or duplicate entries must be removed. Furthermore we want to extract certain features based on the data. We have to both identify the features we already have present as well as creating new features based on the data that could be more informative to the model.
@@ -152,19 +160,50 @@ Playstyle:
 
 *TODO*
 
-### Module 3 - Predictor
-> Gathers information about upcoming matches and uses model to run predictions
-
-*TODO*
-
-### Module 4 - Interface
+### Module 4 - Prediction 🔮
 > Interface to get an overview over performance and bets
 
 *TODO*
 
-## Contributing
+### Module 5 - API 🔗
+> Module to connect frontend and backend
 
-## License
+This program serves as an API that connects the backend with the frontend, providing an overview of performance and bets in the betting system. It utilizes FastAPI to handle API requests and includes three endpoints: `/matches`, `/performance`, and `/stats`.
+
+- `/matches`: Returns a list of matches with their details, including date and time, team names, odds, and betting values.
+- `/performance`: Retrieves model performance data from the database and calculates the profit for each model, returning the formatted data as JSON.
+- `/stats`: Calculates various statistics, such as money won, bets won, winrate, and bets placed, and compares them to previous and goal values, returning the formatted data as JSON.
+
+The API also handles CORS (Cross-Origin Resource Sharing) to ensure compatibility with frontend applications hosted on different domains.
+
+## Contributing 🙋‍♂️
+> Pull requests are welcome
+
+## License 🪪 • ![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)
+
+## Contributors ✨
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Ahmed-Z-D"><img src="https://avatars.githubusercontent.com/u/78611096?v=4?s=100" width="100px;" alt="Ahmed Z-D"/><br /><sub><b>Ahmed Z-D</b></sub></a><br /><a href="#infra-Ahmed-Z-D" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+
+
 
 
 
