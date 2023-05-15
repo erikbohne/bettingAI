@@ -8,7 +8,6 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
-    create_engine,
 )
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -180,9 +179,11 @@ class Processed(Base):
 class Performance(Base):
     __tablename__ = "performance"
     id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey("schedule.match_id"))
     model_id = Column(Integer)
-    bet_type = Column(String)
-    odds = Column(Float)
+    bet_type = Column(String) # what bet category was it
+    bet_outcome = Column(String) # what did we bet on
+    odds = Column(ARRAY(Float))
     placed = Column(Integer)
     outcome = Column(Boolean)
     
@@ -209,3 +210,4 @@ class Bets(Base):
     odds = Column(ARRAY(Float)) # [2.34, 2.50, 1.80] or [1.86, 1.90]
     value = Column(String)
     strength = Column(Float) # (bookmakers odds) / (ai model odds)
+    change = Column(Float) # change in strength from last check

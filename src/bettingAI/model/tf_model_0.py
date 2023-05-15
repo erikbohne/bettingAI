@@ -91,6 +91,7 @@ def bettingAI_model0():
 
     model = Model(inputs=input_layer, outputs=output_layer)
     model.summary()
+    exit()
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 

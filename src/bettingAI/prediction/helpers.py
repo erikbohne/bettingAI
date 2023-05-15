@@ -9,20 +9,20 @@ def calculate_real_odds(probabilities):
     
     return real_odds
 
-def find_value(real_odds, bookmaker, threshold=0.01):
-    """ Returns the outcome with the highest expected value above the given threshold and its value """
-    outcomes = ["HOME VALUE", "DRAW VALUE", "AWAY VALUE"]
-    max_expected_value = -1
-    max_expected_outcome = "NO VALUE"
+def find_value(real_odds, bookmaker):
+    """ Returns the outcome with the highest expected value and its value """
+    outcomes = ["H", "U", "B"]
+    max_expected_value = 0
+    max_expected_outcome = ""
     bet_strength = 0
 
     for real_odds, odds, outcome in zip(real_odds, bookmaker, outcomes):
-        expected_value = (odds / real_odds) - 1
+        expected_value = (odds / real_odds)
 
-        if expected_value > threshold and expected_value > max_expected_value:
+        if expected_value > max_expected_value:
             max_expected_value = expected_value
             max_expected_outcome = outcome
-            bet_strength = odds / real_odds
+            bet_strength = expected_value
 
     return max_expected_outcome, bet_strength
 
@@ -34,6 +34,6 @@ def get_team_names(session):
         team_names[row[0]] = row[1]
     return team_names
 
-def match_team_names(team1, team2, threshold=0.8):
+def match_team_names(team1, team2, threshold=0.7):
     similarity = textdistance.jaro_winkler(team1.lower(), team2.lower())
     return similarity >= threshold

@@ -111,6 +111,7 @@ def get_player_links(teamID: int) -> List[str]:
 
 def get_match_info(
     url: str,
+    justMain=False
 ) -> Union[bool, Tuple[Dict[str, Any], Dict[Any, Any]]]:
     """
     Returns a dictionary of all information from the match
@@ -118,20 +119,24 @@ def get_match_info(
     # Request page
     tokenized = tokenize_page("https://www.fotmob.com" + url, match=True)
 
-    # Get time and date of match
-    dtg = gather_dtg(tokenized[:50])
+    if not justMain:
+        # Get time and date of match
+        dtg = gather_dtg(tokenized[:50])
 
-    # Check if match is in the past
-    today = datetime.date.today()  # current day
-    difference = today - dtg.date()  # find time delta
-    if difference.days < 1:  # if game is not played yet
-        return False, False
+        # Check if match is in the past
+        today = datetime.date.today()  # current day
+        difference = today - dtg.date()  # find time delta
+        if difference.days < 1:  # if game is not played yet
+            return False, False
 
-    # Get competition name and id
-    league = gather_league(tokenized[10:100])
+        # Get competition name and id
+        league = gather_league(tokenized[10:100])
 
     # Block to get init stats from match
     mainInfo = gather_main_info(tokenized[:150])
+    
+    if justMain:
+        return mainInfo
 
     # Block to get all stats from match
     statistics = gather_match_statistics(tokenized[:6000])

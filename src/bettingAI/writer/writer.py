@@ -43,6 +43,7 @@ def runner(session: sqlalchemy.orm.Session) -> None:
         ]
 
         for team in teams:  # iterate over each team
+            continue
             teamID = int(team.split("/")[2])  # fotmob team id
 
             if teamID not in teamIDs:  # check if we already have the team in the database
@@ -92,6 +93,7 @@ def runner(session: sqlalchemy.orm.Session) -> None:
 
         # PART TWO: GET MATCH INFO
         seasons = SEASONS[league["year_span"]]
+        seasons = ["2022-2023"] if int(league["year_span"]) == 2 else ["2023"]
         for season in seasons:  # iterate over last ten seasons for the league
             logger.info(f"Begun on {season} season for {league['name']}")
             if league["level"] > 2:

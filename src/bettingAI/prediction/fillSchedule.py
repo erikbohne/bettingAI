@@ -21,7 +21,7 @@ SEASON = "2022-2023"
 def fill_schedule(session):
     # Find matches for the league in the current season
     links, matches = [], []
-    for id, season in [(47, SEASON)]:
+    for id, season in [(59, "2023")]:
         links += get_match_links(id, season)
     
     for link in tqdm(links):

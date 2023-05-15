@@ -1,0 +1,16 @@
+
+    -------------------
+    Time started: 2023-05-15 08:30:09.489310
+    Time ended: 2023-05-15 08:38:22.118511
+    Time delta: 0:08:12.629201
+    Teams explored: 0
+    Teams added: 0
+    Matches explored: 248
+    Matches added: 96
+    Player stats explored: 11144
+    Player stats added: 0
+    Players explored: 0
+    Players updated: 0
+    Players added: 0
+    -------------------
+    
