@@ -1,7 +1,7 @@
 from typing import Any, List, Union
 import sqlalchemy
 
-from bettingAI.writer.databaseClasses import *
+from bettingAI.googleCloud.databaseClasses import *
 from bettingAI.processing.getInputs import *
 from bettingAI.processing.queries import *
 

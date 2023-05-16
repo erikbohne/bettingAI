@@ -17,6 +17,7 @@ src/bettingAI/prediction/odds_pl_22_23.json
 src/bettingAI/processing/bottleneck.py
 src/bettingAI/processing/testFunctions.py
 src/bettingAI/oddsapi/
+src/bettingAI/.vscode
 __pycache__/
 *.pyc
 *.pyo

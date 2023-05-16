@@ -6,7 +6,7 @@ from sqlalchemy import text
 from tqdm.auto import tqdm
 
 from bettingAI.googleCloud.initPostgreSQL import initSession
-from bettingAI.writer.databaseClasses import Processed
+from bettingAI.googleCloud.databaseClasses import Processed
 from features import features_for_model0, labels
 
 def main(session: sqlalchemy.orm.Session) -> None:

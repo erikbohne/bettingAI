@@ -9,7 +9,7 @@ It provides functions for fetching match details, team information, player infor
 
 Created on March 2, 2023, at 17:47.
 
-Author: [Your Name]
+Author: Erik Nymo Bohne
 """
 
 import datetime

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import tensorflow as tf
 import numpy as np
 
-from bettingAI.writer.databaseClasses import Upcoming, Bets, Performance
+from bettingAI.googleCloud.databaseClasses import Upcoming, Bets, Performance
 from bettingAI.processing.features import features_for_model0
 from bettingAI.writer.scraper import get_match_info
 

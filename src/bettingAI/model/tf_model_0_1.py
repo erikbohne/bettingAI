@@ -7,7 +7,7 @@ from sklearn.inspection import permutation_importance
 
 from sqlalchemy import text, and_
 from bettingAI.googleCloud.initPostgreSQL import initSession
-from bettingAI.writer.databaseClasses import Processed, Matches, Leagues
+from bettingAI.googleCloud.databaseClasses import Processed, Matches, Leagues
 
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Dense, Dropout, BatchNormalization

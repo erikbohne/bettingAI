@@ -1,6 +1,6 @@
 from typing import Optional, Tuple, Mapping
 
-from bettingAI.writer.databaseClasses import *
+from bettingAI.googleCloud.databaseClasses import *
 
 
 def add_team(id: int, name: str, league_id: int, stadium: Optional[str] = "NA") -> Teams:

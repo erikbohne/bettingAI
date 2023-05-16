@@ -2,7 +2,7 @@ from typing import List, Optional, Any
 from sqlalchemy.orm.session import Session
 from sqlalchemy import and_, or_
 
-from bettingAI.writer.databaseClasses import *
+from bettingAI.googleCloud.databaseClasses import *
 
 
 def query_recent_form(

@@ -8,8 +8,8 @@ from typing import Dict, List, Optional
 import sqlalchemy
 
 from bettingAI.googleCloud.initPostgreSQL import initSession
+from bettingAI.googleCloud.databaseClasses import *
 from bettingAI.writer.addRow import *
-from bettingAI.writer.databaseClasses import *
 from bettingAI.writer.scraper import *
 from bettingAI.writer.values import *
 
