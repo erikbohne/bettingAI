@@ -2,9 +2,9 @@
 Tensorflow model to predict the probability of 8 scenarios
 [win, draw, loss, over 2.5, over 3.5, 4.5, 5.5, btts]
 """
+from typing import Tuple
 from sqlalchemy import text, and_
 from bettingAI.googleCloud.initPostgreSQL import initSession
-from bettingAI.writer.databaseClasses import Processed, Matches, Leagues
 
 import numpy as np
 from datetime import datetime
@@ -21,7 +21,15 @@ import matplotlib.pyplot as plt
 BATCH_SIZE = 32
 EPOCHS = 80
 
-def main():
+def main() -> None:
+    """Main function to train and evaluate the TensorFlow model for predicting probabilities of scenarios.
+
+    Returns:
+        None
+
+    Note:
+        The trained model is saved as an .h5 file in the 'models' folder.
+    """
     X_train, X_test, y_train, y_test = load_data()
     model = bettingAI_model0()
     
@@ -40,11 +48,15 @@ def main():
     print("Test loss: ", scores[0])
     print("Test accuracy: ", scores[1])
     
-    #predict_matches(model)
     # Save the trained model as an .h5 file
     model.save('models/model4.h5')
     
-def load_data():
+def load_data() -> Tuple[np.ndarray, np.ndarray]:
+    """Load the data for training and testing the TensorFlow model.
+    
+    Returns:
+        tuple[np.ndarray, np.ndarray]: containing the training and testing data and labels as numpy arrays.
+    """
     session = initSession()
     matches = session.execute(text("SELECT inputs, labels FROM processed_for_model0"))
     
@@ -74,8 +86,27 @@ def load_data():
 
     return train_test_split(data, labels, test_size=0.2)
     
+def bettingAI_model0() -> tf.keras.Model:
+    """Creates and compiles a TensorFlow model for the bettingAI application.
+    
+    Returns:
+    The compiled TensorFlow model.
 
-def bettingAI_model0():
+    Model Architecture:
+    - Input layer with shape (42,)
+    - Fully connected layers with ReLU activation:
+        - Dense layer with 64 units
+        - Batch normalization layer
+        - Dropout layer with a rate of 0.2
+        - Dense layer with 32 units
+        - Dropout layer with a rate of 0.2
+        - Dense layer with 16 units
+    - Output layer with softmax activation and 3 units
+
+    Loss Function: Categorical Crossentropy
+    Optimizer: Adam
+    Metrics: Accuracy
+    """
     input_layer = Input(shape=(42,))
     
     hidden_1 = Dense(64, activation='relu')(input_layer)
@@ -91,7 +122,6 @@ def bettingAI_model0():
 
     model = Model(inputs=input_layer, outputs=output_layer)
     model.summary()
-    exit()
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
