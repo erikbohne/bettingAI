@@ -5,8 +5,14 @@ src/bettingAI/writer/addLeagues.py
 src/bettingAI/writer/displayPostgreSQL.py
 src/bettingAI/writer/test.py
 src/bettingAI/writer/tester.py
-src/bettingAI/model/models/
 src/bettingAI/writer/logs/
+src/bettingAI/writer/reports/
+src/bettingAI/model/models/
+src/bettingAI/prediction/fillSchedule.py
+src/bettingAI/prediction/getMatches.py
+src/bettingAI/prediction/predictor0.py
+src/bettingAI/prediction/odds_pl_22_23.json
+src/bettingAI/oddsapi/
 __pycache__/
 *.pyc
 *.pyo
