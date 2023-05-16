@@ -1,6 +1,10 @@
 src/bettingAI/writer/drop.py
 src/bettingAI/writer/editTable.py
 src/bettingAI/writer/query.py
+src/bettingAI/writer/addLeagues.py
+src/bettingAI/writer/displayPostgreSQL.py
+src/bettingAI/writer/test.py
+src/bettingAI/writer/tester.py
 src/bettingAI/model/models/
 src/bettingAI/writer/logs/
 __pycache__/
