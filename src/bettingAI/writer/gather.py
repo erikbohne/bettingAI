@@ -4,9 +4,20 @@ from typing import List, Optional, Dict, Union, Any
 from bettingAI.writer.values import *
 
 
-def gather_dtg(information: List[str]) -> dt.datetime:
-    """
-    Returns time and date information from the match
+def gather_dtg(
+    information: List[str]
+    ) -> dt.datetime:
+    """Extracts and returns datetime information from the match details.
+
+    Args:
+        information (List[str]): A list of strings containing match details.
+
+    Returns:
+        datetime.datetime: The date and time of the match.
+    
+    Note:
+        If the match round is not available (e.g. Club Friendlies), 
+        it is set to None.
     """
     for i in range(15):
         if information[i] in MONTHS:
@@ -29,9 +40,22 @@ def gather_dtg(information: List[str]) -> dt.datetime:
     return dt.datetime(year, month, day, hour, minute)
 
 
-def gather_league(information: List[str]) -> Dict[str, Any]:
-    """
-    Returns league name and id for competition
+def gather_league(
+    information: List[str]
+    ) -> Dict[str, Any]:
+    """Extracts and returns the league ID from the provided match details.
+
+    Args:
+        information (List[str]): A list of strings containing match details.
+
+    Returns:
+        dict: A dictionary containing the league ID. If no ID is found, 
+        the dictionary will contain a None value for the ID.
+
+    Note:
+        The function searches for the key 'parentLeagueId' in the list.
+        If it is found, the following element (which is assumed to be the ID) is returned.
+        If 'parentLeagueId' is not found in the list, a UnboundLocalError is caught and None is returned.
     """
     for i in range(50):
         if information[i] == "parentLeagueId":
@@ -42,15 +66,30 @@ def gather_league(information: List[str]) -> Dict[str, Any]:
     except UnboundLocalError:
         return {"id": None}
 
-def gather_main_info(information: List[str]) -> Dict[str, Any]:
-    """
-    Returns the initial match stats:
-    * Home team name
-    * Away team name
-    * Home team score
-    * Away team score
-    * Home goal diff
-    * Away goal diff
+def gather_main_info(
+    information: List[str]
+    ) -> Dict[
+        str,
+        Union[str, int]]:
+    """Extracts and returns the initial match stats from the provided match details.
+
+    The function searches for the keys 'homeTeam' and 'awayTeam' in the list 
+    to find the team names and IDs. It also searches for the key 'score' to find the scores.
+    The goal difference is calculated as the difference between the home team score and the away team score.
+    
+    Args:
+        information (List[str]): A list of strings containing match details.
+
+    Returns:
+        dict: A dictionary containing the following match stats:
+            - 'hometeam' (str): The home team name
+            - 'awayteam' (str): The away team name
+            - 'homeID' (int): The home team ID
+            - 'awayID' (int): The away team ID
+            - 'homescore' (str): The home team score
+            - 'awayscore' (str): The away team score
+            - 'homegd' (int): The home goal difference (home score - away score)
+            - 'awaygd' (int): The away goal difference (away score - home score)
     """
     # Find team names
     team = dict()
@@ -86,54 +125,67 @@ def gather_main_info(information: List[str]) -> Dict[str, Any]:
 
     return mainInfo
 
-
 def gather_match_statistics(information: List[str]) -> Dict[str, Any]:
-    """
-    Returns a dict with all the statistics from the match:
-    - Shots:
-        * total shots
-        * shots off target
-        * shots on target
-        * blocked shots
-        * hit woodwork
-        * shots inside box
-        * shots outside box
+    """Extracts and returns the match statistics from the provided match details.
 
-    - xG (Exptected goals):
-        * xG total
-        * xG first half
-        * xG second half
-        * xG open play
-        * xG set play
-        * xG on target (xGOT)
+    The function searches for specific activation words to locate the start index of each category of statistics.
+    It then extracts the corresponding statistics based on the activation words and their positions in the list.
+    Some statistics may be optional and may not be present in certain matches.
+    The extracted statistics are returned in a dictionary with the following structure:
 
-    - Passes:
-        * Passes
-        * Accurate passes
-        * Accuracy
-        * Own half
-        * Opposition half
-        * Accurate long balls
-        * Accurate crosses
-        * Throws
+    {
+        "shots": {
+            "total shots": str,
+            "off target": str,
+            "on target": str,
+            "blocked shot": str,
+            "hit woodwork": str,
+            "inside box": str,
+            "outside box": str
+        },
+        "xG": {
+            "expected goals": str,
+            "first half": str,
+            "second half": str,
+            "open play": str,
+            "set play": str,
+            "penalty": Optional[str],
+            "on target": str
+        },
+        "passes": {
+            "passes": str,
+            "accurate passes": str,
+            "own half": str,
+            "opposition half": str,
+            "accurate long balls": str,
+            "accurate crosses": str,
+            "throws": str
+        },
+        "defence": {
+            "tackles won": str,
+            "interceptions": str,
+            "blocks": str,
+            "clearances": str,
+            "keeper saves": str
+        },
+        "duels": {
+            "duels won": str,
+            "ground duels": str,
+            "aerial duels": str,
+            "successful dribbles": str
+        },
+        "cards": {
+            "yellow cards": str,
+            "red cards": str
+        }
+    }
 
-    - Defence:
-        * Tackles won
-        * Accuracy tackles
-        * Interceptions
-        * Blocks
-        * Clearances
-        * Keeper saves
+    Args:
+        information (List[str]): A list of strings containing match details.
 
-    - Dicipline:
-        * Yellow cards
-        * Red cards
-
-    - Duels:
-        * Duels won
-        * Ground duels won
-        * Aerial duels won
-        * Successfull dribbles
+    Returns:
+        Optional[Dict[str, Dict[str, Union[str, List[List[str]]]]]]: A dictionary containing the match statistics.
+        If the start index of the statistics cannot be found, None is returned.
     """
 
     def find_start_index(information: List[str]) -> int:
@@ -281,27 +333,39 @@ def gather_match_statistics(information: List[str]) -> Dict[str, Any]:
         "cards": cards_dict,
     }
 
-
 def gather_player_bio(
     information: List[str],
-) -> Dict[str, Union[Dict[str, Any], List]]:
-    """
-    Returns a dict with all the statistics from the match:
+    ) -> Dict[
+        str, 
+        Union[Dict[str, Any], List]]:
+    """Extracts and returns the player's bio and season statistics from the provided match details.
 
-    - Bio:
-        * Height
-        * Preffered foot
-        * Age
-        * Country
-        * Shirt
-        * Market val (Euro)
-        * Primary position
+    The function searches for specific indicators to locate the corresponding values in the information list.
+    Some indicators may not be present in certain player details, in which case their values are set to 0.
+    The extracted information is returned in a dictionary with the following structure:
 
-    - Season stats:
-        * Matches
-        * Goals
-        * Assists
-        * FotMob Rating
+    {
+        "bio": {
+            "position": str,
+            "Height": str,
+            "Age": str,
+            "Country": str,
+            "Shirt": str,
+            "Market": str
+        },
+        "season": {
+            "Matches": int,
+            "Goals": int,
+            "Assists": int,
+            "FotMob": Union[int, float]
+        }
+    }
+
+    Args:
+        information (List[str]): A list of strings containing player details.
+
+    Returns:
+        Dict[str, Union[Dict[str, Any], List]]: A dictionary containing the player's bio and season statistics.
     """
     # Find indexes for iteration
     for i, info in enumerate(information):
@@ -357,32 +421,44 @@ def gather_player_bio(
 
 def gather_player_performance(information: List[str]) -> Dict[str, Any]:
     """
-    Gather player performance of each player from each team
-    - Player:
-        * FotMob Rating
-        * Minutes played
-        * Goals
-        * Assists
-        * Total shots
-        * Accurate passes [accurate/inaccurate, %]
-        * Chances created
-    - Attack stats:
-        * Touches
-        * Successful dribbles
-        * Passes into final third
-        * Accurate long balls
-        * Dispossessed
-    - Defence stats:
-        * Tackles won
-        * Blocks
-        * Clearances
-        * Headed clearance
-        * Recoveries
-    - Duels stats:
-        * Ground duels won
-        * Aerial duels won
-        * Was fouled
-        * Fouls comitted
+    Extracts and returns the performance statistics for each player from the provided match details.
+
+    The function searches for specific indicators in the information list to extract 
+    the performance statistics for each player.
+    If a particular statistic is not available for a player, its value is set to None.
+    The extracted information is returned in a dictionary with the following structure:
+
+    {
+        "Player Name 1": {
+            "id": str,
+            "fotmob rating": Union[int, None],
+            "minutes played": Union[int, None],
+            "goals": Union[int, None],
+            "assists": Union[int, None],
+            "shots": Union[int, None],
+            "passes": Union[int, None],
+            "chances created": Union[int, None],
+            "touches": Union[int, None],
+            "passes into final third": Union[int, None],
+            "dispossessed": Union[int, None],
+            "tackles won": Union[int, None],
+            "recoveries": Union[int, None],
+            "ground duels won": Union[int, None],
+            "aerial duels won": Union[int, None],
+            "was fouled": Union[int, None],
+            "fouls committed": Union[int, None]
+        },
+        "Player Name 2": {
+            ...
+        },
+        ...
+    }
+
+    Args:
+        information (List[str]): A list of strings containing player performance details.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing the performance statistics for each player.
     """
     playerPerformance = {}  # init the dict to store players
 
@@ -482,9 +558,22 @@ def gather_player_performance(information: List[str]) -> Dict[str, Any]:
     # Return a dict containing all players
     return playerPerformance
 
-def gather_next_match_info(information):
+def gather_next_match_info(
+    information: List[str]
+    ) -> Optional[List[str]]:
     """
-    Returns team ids for the upcoming match
+    Extracts and returns the team IDs for the upcoming match from the provided match details.
+
+    The function searches for the keys 'homeTeam' and 'awayTeam' in the information list to find the team IDs.
+    Once both team IDs are found, they are returned as a list.
+    If the necessary information is not found, or if the information is incomplete, None is returned.
+
+    Args:
+        information (List[str]): A list of strings containing match details.
+
+    Returns:
+        Optional[List[str]]: A list containing the team IDs of the home and away teams, respectively.
+        If the team IDs are not found or incomplete information is provided, None is returned.
     """
     ids = []
     nextNumber = False

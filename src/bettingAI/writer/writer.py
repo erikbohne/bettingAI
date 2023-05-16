@@ -6,9 +6,8 @@ from collections import Counter
 from typing import Dict, List, Optional
 
 import sqlalchemy
-from sqlalchemy.orm import sessionmaker
 
-from bettingAI.googleCloud.initPostgreSQL import initPostgreSQL
+from bettingAI.googleCloud.initPostgreSQL import initSession
 from bettingAI.writer.addRow import *
 from bettingAI.writer.databaseClasses import *
 from bettingAI.writer.scraper import *
@@ -16,8 +15,18 @@ from bettingAI.writer.values import *
 
 
 def runner(session: sqlalchemy.orm.Session) -> None:
-    """
-    Main function of the program that runs the logic
+    """Executes the main logic of the writer program.
+
+    This function updates team and player information, gathers match data, and adds it to the database.
+    It iterates over each league, retrieves team links, updates team information, retrieves player links,
+    updates player information, retrieves match links, gathers match information, and adds it to the database.
+    The function also handles exceptions and logs error messages.
+
+    Args:
+        session (sqlalchemy.orm.Session): The database session object used for database operations.
+
+    Returns:
+        None
     """
     # Import leagues from database
     leagues = session.query(Leagues).all()
@@ -186,6 +195,11 @@ def runner(session: sqlalchemy.orm.Session) -> None:
 
 
 def initLogger() -> logging.Logger:
+    """Initializes and configures a logger object for logging messages.
+
+    Returns:
+        logging.Logger: The logger object configured with file and console handlers.
+    """
     # Create a logger object
     logger = logging.getLogger()
 
@@ -215,7 +229,13 @@ def initLogger() -> logging.Logger:
 
 def loadJSON(path: str) -> Dict:
     """
-    Returns data from JSON file @ path
+    Loads and returns data from a JSON file located at the specified path.
+
+    Args:
+        path (str): The path to the JSON file.
+
+    Returns:
+        dict: The data loaded from the JSON file.
     """
     return json.load(open(path))
 
@@ -227,10 +247,17 @@ def createReport(
     test: Optional[bool] = False,
 ) -> None:
     """
-    Creates reports with information about the execution.
-    Saves report as a .txt file and adds to SQLdatabase.
+    Creates a report with information about the execution and saves it as a .txt file.
+
+    Args:
+        start (datetime.datetime): The start time of the execution.
+        end (datetime.datetime): The end time of the execution.
+        report (Counter): A Counter object containing various execution statistics.
+        test (bool, optional): Specifies whether it is a test run. Defaults to False.
+
+    Returns:
+        None: The function does not return any value.
     """
-    # Format report content
     reportContent = f"""
     -------------------
     Time started: {start}
@@ -262,6 +289,14 @@ def createReport(
 
 
 if __name__ == "__main__":
+    """
+    Main entry point of the program.
+
+    The program performs the following steps:
+    1. Initializes the logging session and establishes a connection to the PostgreSQL database.
+    2. Starts a session with the database.
+    3. Executes the main program logic by calling the `runner` function.
+    """
 
     # Start logging session
     exceptions = Counter()  # class to track number of each exception instance
@@ -272,19 +307,11 @@ if __name__ == "__main__":
 
     # Establish connection to the database
     logger.info("Connecting to PostgreSQL")
-    connection = initPostgreSQL()
-    if connection is None:
-        logger.critical("Could not connect to PostgreSQL -> {e}")
-    else:
-        logger.info("Connected to PostgreSQL")
-
-    # Start session with connection
     try:
-        Session = sessionmaker(connection)
-        session = Session()
-        logger.info("Session established")
+        session = initSession()
+        logger.info("Connection established")
     except Exception as e:
-        logger.warning(e)
+        logger.critical(f"Could not start session with database. -> {e}")
 
     # Run program
     runner(session)
