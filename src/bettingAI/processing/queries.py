@@ -1,12 +1,27 @@
-import os
-import sys
-
+from typing import List, Optional, Any
+from sqlalchemy.orm.session import Session
 from sqlalchemy import and_, or_
 
 from bettingAI.writer.databaseClasses import *
 
 
-def query_recent_form(teamID, opponentID, date, session):
+def query_recent_form(
+    teamID: int, 
+    opponentID: int, 
+    date: Any, 
+    session: Session
+) -> List[Any]:
+    """Queries and returns recent matches involving teamID and opponentID before the specified date.
+
+    Args:
+        teamID (int): The ID of the team.
+        opponentID (int): The ID of the opponent team.
+        date (Any): The specified date to filter the matches.
+        session (Session): The SQLAlchemy session object for database access.
+
+    Returns:
+        List[Any]: The list of recent matches involving the team and opponent before the specified date.
+    """
     matches = (
         session.query(Matches)
         .filter(
@@ -25,8 +40,24 @@ def query_recent_form(teamID, opponentID, date, session):
     return matches
 
 
-def query_H2H(teamID, opponentID, date, session):
+def query_H2H(
+    teamID: int,
+    opponentID: int, 
+    date: Any, 
+    session: Session
+) -> Optional[List[Any]]:
+    """Queries and returns head-to-head matches between teamID and opponentID before the specified date.
 
+    Args:
+        teamID (int): The ID of the team.
+        opponentID (int): The ID of the opponent team.
+        date (Any): The specified date to filter the matches.
+        session (Session): The SQLAlchemy session object for database access.
+
+    Returns:
+        Optional[List[Any]]: The list of head-to-head matches between the team and opponent before the specified date,
+        or None if no matches are found.
+    """
     matches = (
         session.query(Matches)
         .filter(

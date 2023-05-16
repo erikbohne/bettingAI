@@ -1,20 +1,31 @@
-import os
-import sys
-from datetime import datetime
-from typing import List
+from typing import Any, List, Union
+import sqlalchemy
 
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql import func
-
-from bettingAI.googleCloud.initPostgreSQL import initPostgreSQL
 from bettingAI.writer.databaseClasses import *
 from bettingAI.processing.getInputs import *
 from bettingAI.processing.queries import *
 
 
-def features_for_model0(teamID, opponentID, season, thisSide, date, session):
-    """
-    Returns all the features needed from a match for model0 training
+def features_for_model0(
+    teamID: int,
+    opponentID: int,
+    season: str,
+    thisSide: str,
+    date: str,
+    session: Any
+) -> List[float]:
+    """Returns all the features needed from a match for model0 training.
+
+    Parameters:
+    - teamID (int): The ID of the team.
+    - opponentID (int): The ID of the opponent team.
+    - season (str): The season of the match.
+    - thisSide (str): The side of the team (home or away).
+    - date (str): The date of the match.
+    - session (Any): SQLAlchemy session object for interacting with the database.
+
+    Returns:
+    - features (List[float]): A list of float values representing the features.
     """
     otherSide = "away" if thisSide == "home" else "home"
 
@@ -73,52 +84,29 @@ def features_for_model0(teamID, opponentID, season, thisSide, date, session):
     return features
 
 
-def features(teamID, opponentID, date, session):
+def labels(matchID: int,
+           team_id: int,
+           session: sqlalchemy.orm.Session
+) -> List[int]:
+    """Returns the labels for the match.
 
-    # Init team features dict
-    teamFeatures = {}
+    Parameters:
+    - matchID (int): The ID of the match.
+    - team_id (int): The ID of the team.
+    - session (Session): SQLAlchemy session object for interacting with the database.
 
-    # Get player info
-    teamFeatures["home_player_rating"] = get_average_player_rating(teamID, session)
-    teamFeatures["away_player_rating"] = get_average_player_rating(opponentID, session)
-    teamFeatures["home_player_age"] = get_average_player_age(teamID, session)
-    teamFeatures["away_player_age"] = get_average_player_age(opponentID, session)
-    teamFeatures["home_player_height"] = get_average_player_height(teamID, session)
-    teamFeatures["away_player_height"] = get_average_player_height(opponentID, session)
-    teamFeatures["home_player_value"] = get_average_player_value(teamID, session)
-    teamFeatures["away_player_value"] = get_average_player_value(opponentID, session)
+    Returns:
+    - labels (List[int]): A list of integer labels indicating the match outcomes.
+        The labels are as follows:
+        - team_win: 1 if the team won, 0 otherwise.
+        - draw: 1 if the match ended in a draw, 0 otherwise.
+        - team_loss: 1 if the team lost, 0 otherwise.
+        - over1_5: 1 if the total goals scored in the match is over 1.5, 0 otherwise.
+        - over2_5: 1 if the total goals scored in the match is over 2.5, 0 otherwise.
+        - over3_5: 1 if the total goals scored in the match is over 3.5, 0 otherwise.
+        - over4_5: 1 if the total goals scored in the match is over 4.5, 0 otherwise.
+        - btts: 1 if both teams scored in the match, 0 otherwise.
 
-    # Get recent form statistics from teams
-    teamFeatures["home_points_rate"] = get_points_won_ratio(teamID, date, session)
-    teamFeatures["away_points_rate"] = get_points_won_ratio(opponentID, date, session)
-    teamFeatures["home_outcome_streak"] = get_outcome_streak(teamID, date, session)
-    teamFeatures["away_outcome_streak"] = get_outcome_streak(opponentID, date, session)
-    teamFeatures["home_side_form"] = get_home_away_form(teamID, "home", date, session)
-    teamFeatures["away_side_form"] = get_home_away_form(opponentID, "away", date, session)
-
-    matches = query("H2H", teamID, opponentID, date, session)
-    # Get h2h statistics from teams
-    teamFeatures["outcome_distribution"] = get_outcome_distribution(teamID, matches)
-    teamFeatures["side_distribtuion"] = get_side_distribution(teamID, matches)
-    teamFeatures["recent_encounters"] = get_recent_encounters(teamID, date, matches)
-    teamFeatures["average_goals_per_match"] = get_average_goals_per_match(matches)
-    teamFeatures[
-        "average_goals_conceded_per_match"
-    ] = get_average_goals_conceded_per_match(teamID, matches)
-    teamFeatures["average_goal_difference"] = get_average_goal_difference_match(
-        teamID, matches
-    )
-    teamFeatures["btts_rate"] = get_btts_rate(matches)
-    teamFeatures["clean_sheet_rate_h2h"] = get_clean_sheet_rate_h2h(teamID, matches)
-    teamFeatures["over_under_2_5"] = get_over_under_2_5(matches)
-    teamFeatures["outcome_streak_h2h"] = get_outcome_streak_h2h(teamID, matches)
-
-    return teamFeatures
-
-
-def labels(matchID: int, team_id: int, session) -> List[int]:
-    """
-    Returns the labels for the match
     """
     # Query the Matches table for the match with the given matchID
     match = session.query(Matches).filter(Matches.id == matchID).one()
@@ -146,5 +134,4 @@ def labels(matchID: int, team_id: int, session) -> List[int]:
 
 
 if __name__ == "__main__":
-
     raise SyntaxError("features.py is only a file containing feature extraction functions.")

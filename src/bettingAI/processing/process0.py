@@ -1,6 +1,7 @@
 """
 Program that processes the raw match data from the database to be used in model0
 """
+import sqlalchemy
 from sqlalchemy import text
 from tqdm.auto import tqdm
 
@@ -8,8 +9,21 @@ from bettingAI.googleCloud.initPostgreSQL import initSession
 from bettingAI.writer.databaseClasses import Processed
 from features import features_for_model0, labels
 
-def main(session):
-    
+def main(session: sqlalchemy.orm.Session) -> None:
+    """Main function for processing raw match data and generating processed data for the model.
+
+    Steps performed by the function:
+    1. Retrieve the raw match IDs and processed match IDs from the database to determine which matches to process.
+    2. Filter out the matches that have already been processed.
+    3. Iterate over the remaining raw matches and generate processed data for each team involved in the match.
+    4. Create Processed objects with the necessary data (match ID, league ID, inputs, labels) for each team.
+    5. Add the Processed objects to the session and commit the changes to the database.
+
+    Parameters:
+    - session: SQLAlchemy session object for interacting with the database.
+
+    Note: The function assumes that the necessary helper functions (features_for_model0, labels) are available.
+    """
     # Get the raw match ids and processed match ids to figure out what matches to process
     rawMatches = session.execute(text("SELECT id, home_team_id, away_team_id, league_id, season, date FROM matches")).fetchall()
     processedMatches = session.execute(text("SELECT DISTINCT match_id FROM processed_for_model0")).fetchall()

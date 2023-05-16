@@ -1,15 +1,33 @@
-import os
-import sys
+from typing import List, Tuple, Dict, Union, Any
 import itertools
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from sqlalchemy import and_, or_
+from sqlalchemy.orm.session import Session
 
 from bettingAI.writer.databaseClasses import *
 from bettingAI.processing.helpers import euros_to_number, get_outcome
 
 
-def get_combined_team_stats(team_ids, season, sides, date, session):
+def get_combined_team_stats(
+    team_ids: List[int],
+    season: str,
+    sides: List[str],
+    date: datetime,
+    session: Session
+) -> List[float]:
+    """Returns all the features needed from a match for model0 training.
+
+    Args:
+        team_ids (List[int]): A list of two team IDs.
+        season (str): The season for which to retrieve the team stats.
+        sides (List[str]): A list of two sides, representing "home" and "away".
+        date (datetime.datetime): The date used to filter matches.
+        session (Session): The SQLAlchemy session object.
+
+    Returns:
+        List[float]: A list of floating-point values representing the team features.
+    """
     if len(team_ids) != 2 or len(sides) != 2:
         raise ValueError("Expected 2 team_ids and 2 sides")
 
@@ -213,11 +231,19 @@ def get_combined_team_stats(team_ids, season, sides, date, session):
 
     return data_points
 
-
 # Player info
-def get_average_player_rating(teamID, session):
-    """
-    Returns the average player rating for a team
+def get_average_player_rating(
+    teamID: int,
+    session: Session
+) -> float:
+    """Returns the average player rating for a team.
+
+    Args:
+        teamID (int): The ID of the team.
+        session (Session): The SQLAlchemy session object.
+
+    Returns:
+        float: The average player rating.
     """
     # Fetch all player ratings from players in a team
     playerRatings = [
@@ -227,10 +253,18 @@ def get_average_player_rating(teamID, session):
 
     return sum(playerRatings) / len(playerRatings) if len(playerRatings) > 0 else 0
 
+def get_average_player_age(
+    teamID: int,
+    session: Session
+) -> float:
+    """Returns the average player age for a team.
 
-def get_average_player_age(teamID, session):
-    """
-    Returns the average player age for a team
+    Args:
+        teamID (int): The ID of the team.
+        session (Session): The SQLAlchemy session object.
+
+    Returns:
+        float: The average player age.
     """
     # Fetch all players age from players in a team
     playerAges = [
@@ -240,10 +274,18 @@ def get_average_player_age(teamID, session):
 
     return sum(playerAges) / len(playerAges)
 
+def get_average_player_height(
+    teamID: int,
+    session: Session
+) -> float:
+    """Returns the average player height for a team.
 
-def get_average_player_height(teamID, session):
-    """
-    Returns the average player height for a team
+    Args:
+        teamID (int): The ID of the team.
+        session (Session): The SQLAlchemy session object.
+
+    Returns:
+        float: The average player height.
     """
     # Fetch all players height from players in a team
     playerHeights = [
@@ -254,10 +296,18 @@ def get_average_player_height(teamID, session):
 
     return sum(playerHeights) / len(playerHeights)
 
+def get_average_player_value(
+    teamID: int,
+    session: Session
+) -> int:
+    """Returns the average player market value for a team.
 
-def get_average_player_value(teamID, session):
-    """
-    Returns the average player market value for a team
+    Args:
+        teamID (int): The ID of the team.
+        session (Session): The SQLAlchemy session object.
+
+    Returns:
+        int: The average player market value.
     """
     # Fetch all players height from players in a team
     playerVals = [
@@ -274,9 +324,18 @@ def get_average_player_value(teamID, session):
 
 
 # Recent form
-def get_points_won_ratio(teamID, matches):
-    """
-    Returns the points won ratio for teamID the last 3, 5 and 10 matches
+def get_points_won_ratio(
+    teamID: int,
+    matches: List
+) -> Tuple[float, float, float]:
+    """Returns the points won ratio for a team in the last 3, 5, and 10 matches.
+
+    Args:
+        teamID (int): The ID of the team.
+        matches (List): The list of matches to consider.
+
+    Returns:
+        Tuple[float, float, float]: The points won ratio for the last 3, 5, and 10 matches.
     """
     points_won = {3: 0, 5: 0, 10: 0}
     match_count = {3: 0, 5: 0, 10: 0}
@@ -307,9 +366,18 @@ def get_points_won_ratio(teamID, matches):
     return points_won_ratio[3], points_won_ratio[5], points_won_ratio[10]
 
 
-def get_outcome_streak(teamID, matches):
-    """
-    Returns the winning/losing streak going in to a match
+def get_outcome_streak(
+    teamID: int,
+    matches: List
+) -> int:
+    """Returns the winning/losing streak going into a match.
+
+    Args:
+        teamID (int): The ID of the team.
+        matches (List): The list of matches.
+
+    Returns:
+        int: The winning/losing streak.
     """
     if len(matches) == 0:
         return 0
@@ -328,10 +396,24 @@ def get_outcome_streak(teamID, matches):
 
     return streak
 
-
-def get_home_away_form(teamID, side, matches):
+def get_home_away_form(
+    teamID: int,
+    side: str,
+    matches: List
+) -> float:
     """
-    Returns the form from the last 5 home/away matches as wins/total
+    Returns the form from the last 5 home/away matches as wins/total.
+
+    Args:
+        teamID (int): The ID of the team.
+        side (str): The side (either 'home' or 'away').
+        matches (List): The list of matches.
+
+    Returns:
+        float: The win rate.
+    
+    Raises:
+        ValueError: If the side value is not 'home' or 'away'.
     """
     if side not in ["home", "away"]:
         raise ValueError("Invalid side value. Accepted values are 'home' or 'away'.")
@@ -362,9 +444,20 @@ def get_home_away_form(teamID, side, matches):
 
 
 # H2H
-def get_outcome_distribution(teamID, matches):
-    """
-    Returns an outcome distribution between two teams from all matches they've played together before the inputted date
+def get_outcome_distribution(
+    teamID: int,
+    matches: List
+) -> Dict[str, Union[int, float]]:
+    """Returns an outcome distribution between two teams from all 
+    matches they've played together before the inputted date.
+
+    Args:
+        teamID (int): The ID of the team.
+        matches (List): The list of matches.
+
+    Returns:
+        Dict[str, Union[int, float]]: The outcome distribution containing
+        the counts and ratios of wins, draws, and losses.
     """
     outcome_distribution = {"win": 0, "draw": 0, "loss": 0}
 
@@ -389,10 +482,20 @@ def get_outcome_distribution(teamID, matches):
 
     return outcome_distribution
 
+def get_side_distribution(
+    teamID: int, 
+    side: str, 
+    matches: List
+) -> float:
+    """Returns the winning rate of teamID at home and away when playing against opponentID.
 
-def get_side_distribution(teamID, side, matches):
-    """
-    Returns the winning rate of teamID at home and away when playing against opponentID
+    Args:
+        teamID (int): The ID of the team.
+        side (str): The side to consider ("home" or "away").
+        matches (List): The list of matches.
+
+    Returns:
+        float: The winning rate of teamID at the specified side.
     """
     if matches is None:
         return 0
@@ -424,10 +527,20 @@ def get_side_distribution(teamID, side, matches):
     else:
         return distribution["away_win_rate"]
 
+def get_recent_encounters(
+    teamID: int,
+    date: datetime, 
+    matches: List
+) -> float:
+    """Returns the win rate for teamID against opponentID for the last two years.
 
-def get_recent_encounters(teamID, date, matches):
-    """
-    Returns the win rate for teamID against opponentID for the last two years
+    Args:
+        teamID (int): The ID of the team.
+        date (datetime): The current date.
+        matches (List): The list of matches.
+
+    Returns:
+        float: The win rate of teamID against opponentID for the last two years.
     """
     if matches is None:
         return 0
@@ -451,9 +564,15 @@ def get_recent_encounters(teamID, date, matches):
     return win_rate
 
 
-def get_average_goals_per_match(matches):
+def get_average_goals_per_match(matches: List) -> float:
     """
-    Returns the average goals scored in matches between teamID and opponentID
+    Returns the average goals scored in matches between teamID and opponentID.
+
+    Args:
+        matches (List): The list of matches.
+
+    Returns:
+        float: The average goals scored per match.
     """
     if matches is None:
         return 0
@@ -470,9 +589,18 @@ def get_average_goals_per_match(matches):
     return average_goals_per_match
 
 
-def get_average_goals_conceded_per_match(teamID, matches):
-    """
-    Returns average goals conceded by teamID against opponentID
+def get_average_goals_conceded_per_match(
+    teamID: int,
+    matches: List[Any]
+) -> float:
+    """Returns average goals conceded by teamID against opponentID.
+
+    Args:
+        teamID (int): The ID of the team.
+        matches (List[Any]): The list of matches.
+
+    Returns:
+        float: The average goals conceded per match.
     """
     if matches is None:
         return 0
@@ -490,9 +618,18 @@ def get_average_goals_conceded_per_match(teamID, matches):
     return average_goals_conceded
 
 
-def get_average_goal_difference_match(teamID, matches):
-    """
-    Returns the average goals scored in matches between teamID and opponentID seen in teamID's perspective
+def get_average_goal_difference_match(
+    teamID: int,
+    matches: List[Any]
+) -> float:
+    """Returns the average goal difference in matches between teamID and opponentID seen from teamID's perspective.
+
+    Args:
+        teamID (int): The ID of the team.
+        matches (List[Any]): The list of matches.
+
+    Returns:
+        float: The average goal difference per match.
     """
     if matches is None:
         return 0
@@ -512,9 +649,14 @@ def get_average_goal_difference_match(teamID, matches):
     return average_goals_difference
 
 
-def get_btts_rate(matches):
-    """
-    Returns the percentage of both teams to score (BTTS)
+def get_btts_rate(matches: List[Any]) -> float:
+    """Returns the percentage of matches where both teams score (BTTS).
+
+    Args:
+        matches (List[Any]): The list of matches.
+
+    Returns:
+        float: The BTTS rate.
     """
     if matches is None:
         return 0
@@ -530,9 +672,18 @@ def get_btts_rate(matches):
     return btts_rate
 
 
-def get_clean_sheet_rate_h2h(teamID, matches):
-    """
-    Returns the clean sheet rate for teamID against opponentID
+def get_clean_sheet_rate_h2h(
+    teamID: int,
+    matches: List[Any]
+) -> float:
+    """Returns the clean sheet rate for teamID against opponentID.
+
+    Args:
+        teamID (int): The ID of the team.
+        matches (List[Any]): The list of matches.
+
+    Returns:
+        float: The clean sheet rate.
     """
     if matches is None:
         return 0
@@ -550,9 +701,14 @@ def get_clean_sheet_rate_h2h(teamID, matches):
     return clean_sheet_rate
 
 
-def get_over_under_2_5(matches):
-    """
-    Return the percentage of matches where total goals scored is more than 2.5
+def get_over_under_2_5(matches: List[Any]) -> float:
+    """Returns the percentage of matches where total goals scored is more than 2.5.
+
+    Args:
+        matches (List[Any]): The list of matches.
+
+    Returns:
+        float: The percentage of matches with more than 2.5 total goals.
     """
     if matches is None:
         return 0
@@ -569,9 +725,19 @@ def get_over_under_2_5(matches):
     return over_2_5_percentage
 
 
-def get_outcome_streak_h2h(teamID, matches):
-    """
-    Returns the winning/losing streak teamID against opponentID, going in to a match
+def get_outcome_streak_h2h(
+    teamID: int,
+    matches: List[Any]
+) -> int:
+    """Returns the winning/losing streak of teamID against opponentID going into a match.
+
+    Args:
+        teamID (int): The ID of the team.
+        matches (List[Any]): The list of matches.
+
+    Returns:
+        int: The winning/losing streak of the team. Positive value indicates a winning streak,
+            negative value indicates a losing streak, and 0 indicates no streak.
     """
     if matches is None:
         return 0
@@ -598,3 +764,6 @@ def get_outcome_streak_h2h(teamID, matches):
             break
 
     return streak if outcome else -streak
+
+if __name__ == "__main__":
+    raise SyntaxError("getInputs.py is only a file containing feature extraction functions.")
