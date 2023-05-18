@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import and_, or_
 from sqlalchemy.orm.session import Session
 
-from bettingAI.writer.databaseClasses import *
+from bettingAI.googleCloud.databaseClasses import *
 from bettingAI.processing.helpers import euros_to_number, get_outcome
 
 

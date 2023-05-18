@@ -475,7 +475,7 @@ def update_bets(
                 'new_strength': round(strength, 2),
                 'new_odds': bookmaker_odds,
                 'bet_id': bet.id,
-                'change': round((bet.strength - strength), 2)
+                'change': round((strength - bet.strength), 2)
             }
         )
         session.commit()

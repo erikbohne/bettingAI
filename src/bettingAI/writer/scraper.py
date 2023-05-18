@@ -121,7 +121,7 @@ def get_team_links(
 
 def get_match_links(
     leagueID: int,
-    season: str
+    season: str = ""
     ) -> List[str]:
     """
     Retrieves and returns a list of match links for a given league and season.
