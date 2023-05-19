@@ -18,7 +18,8 @@ def add_match_to_bets(
     bet_type: str, 
     advice: str, 
     strength: float, 
-    bookmaker_odds: list[float]
+    bookmaker_odds: list[float],
+    kelly: float
     ) -> None:
     """
     Add a match to the Bets table in the database.
@@ -34,6 +35,7 @@ def add_match_to_bets(
         advice (str): The advice for the bet.
         strength (float): The strength of the bet.
         bookmaker_odds (List[float]): A list of odds provided by the bookmaker for the bet.
+        kelly (float): The kelly fraction
 
     Returns:
         None
@@ -45,6 +47,7 @@ def add_match_to_bets(
         bet_type=bet_type,
         odds=bookmaker_odds,
         value=advice,
+        kelly_fraction=kelly,
         strength=round(strength, 2),
         change=1.00
         )
@@ -97,7 +100,8 @@ def calculate_advice_and_strength(
     ) -> Tuple[
         Optional[str], 
         Optional[float], 
-        Optional[List[float]]]:
+        Optional[List[float]],
+        Optional[float]]:
     """
     Calculate the betting advice, strength, and bookmaker odds for a given match.
 
@@ -109,8 +113,8 @@ def calculate_advice_and_strength(
         session (sqlalchemy.orm.Session): SQLAlchemy Session object connected to the database.
 
     Returns:
-        Tuple[Optional[str], Optional[float], Optional[List[float]]]: A tuple containing 
-        advice (str or None), strength (float or None), and bookmaker odds (list of floats or None).
+        Tuple[Optional[str], Optional[float], Optional[List[float]], Optional[float]]: A tuple containing 
+        advice (str or None), strength (float or None), bookmaker odds (list of floats or None) and kelly_fraction (float or None).
         Returns (None, None, None) if no matched odds are found.
     """
     input_data = np.array(
@@ -139,11 +143,33 @@ def calculate_advice_and_strength(
             break
         
     if matched_odds:
-        advice, strength = find_value(real_odds, [matched_odds['h'], matched_odds['d'], matched_odds['a']])
+        odds = [matched_odds['h'], matched_odds['d'], matched_odds['a']]
+        advice, strength = find_value(real_odds, odds)
     else:
-        return None, None, None
+        return None, None, None, None
+    
+    idx = 0 if advice == "H" else 1 if advice == "U" else 2
+    kelly_fraction = calculate_kelly_fraction(odds[idx], probabilities[0][idx])
 
-    return advice, strength, [matched_odds['h'], matched_odds['d'], matched_odds['a']]
+    return advice, strength, odds, kelly_fraction
+
+def calculate_kelly_fraction(
+    odds: float,
+    probability: float
+) -> float:
+    """Calculate the fraction of bankroll to bet using the Kelly Criterion.
+
+    Args:
+        odds (float): The betting odds for the event.
+        probability (float): The predicted probability of the event occurring.
+
+    Returns:
+        float: The fraction of the bankroll to bet, as per the Kelly Criterion.
+    """
+    b = odds - 1
+    q = 1 - probability
+    f_star = (b * probability - q) / b
+    return f_star
 
 def calculate_real_odds(
     probabilities: List[float]
@@ -388,7 +414,7 @@ def remove_played_matches(
     for match in played_matches:
         print(match.match_id)
         bets = session.execute(text(
-            "SELECT id as id, bet_type as type, odds as odds, value as value FROM bets WHERE match_id = :match_id;"),
+            "SELECT id as id, bet_type as type, odds as odds, value as value, kelly as kelly FROM bets WHERE match_id = :match_id;"),
             {
                 'match_id': match.match_id
             }
@@ -417,7 +443,7 @@ def remove_played_matches(
                     bet_type=bet.type,
                     bet_outcome=bet.value,
                     odds=bet.odds,
-                    placed=250,
+                    placed=int(250 * bet.kelly),
                     outcome=outcome
                 ))
                 session.execute(text(
@@ -448,7 +474,8 @@ def update_bets(
     bet: object, 
     advice: str, 
     strength: float, 
-    bookmaker_odds: list[float]
+    bookmaker_odds: list[float],
+    kelly: float
     ) -> None:
     """
     Update existing bet records in the Bets table.
@@ -462,18 +489,20 @@ def update_bets(
         advice (str): The updated advice for the bet.
         strength (float): The updated strength value for the bet.
         bookmaker_odds (list[float]): The updated odds from the bookmaker.
+        kelly (float): The kelly fraction
 
     Returns:
         None
     """
     try:
         session.execute(text(
-            "UPDATE bets SET odds = :new_odds, value = :value, strength = :new_strength, change =:change WHERE id = :bet_id;"
+            "UPDATE bets SET odds = :new_odds, value = :value, kelly_fraction = :kelly, strength = :new_strength, change =:change WHERE id = :bet_id;"
         ),
             {
                 'value': advice,
                 'new_strength': round(strength, 2),
                 'new_odds': bookmaker_odds,
+                'kelly': kelly,
                 'bet_id': bet.id,
                 'change': round((strength - bet.strength), 2)
             }

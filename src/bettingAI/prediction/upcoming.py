@@ -65,7 +65,7 @@ def upcoming(
             if len(bets) == 0:  # if an upcoming match doesn't have a bet prediction
                 # Add match to Bets
                 for type in ["HUB"]:
-                    advice, strength, bookmaker_odds = calculate_advice_and_strength(
+                    advice, strength, bookmaker_odds, kelly = calculate_advice_and_strength(
                         match,
                         live_odds[match.league_id],
                         team_names,
@@ -74,10 +74,10 @@ def upcoming(
                     )
 
                     if advice is not None and strength is not None:
-                        add_match_to_bets(session, match, type, advice, strength, bookmaker_odds)
+                        add_match_to_bets(session, match, type, advice, strength, bookmaker_odds, kelly)
                 
             for bet in bets:
-                advice, strength, bookmaker_odds = calculate_advice_and_strength(
+                advice, strength, bookmaker_odds, kelly = calculate_advice_and_strength(
                     match,
                     live_odds[match.league_id],
                     team_names,
@@ -86,8 +86,8 @@ def upcoming(
                     )
                 if advice is None:
                     continue
-
-                update_bets(session, bet, advice, strength, bookmaker_odds)
+                
+                update_bets(session, bet, advice, strength, bookmaker_odds, kelly)
         else:
             # Add match to Upcoming
             inputs = features_for_model0(
@@ -102,7 +102,7 @@ def upcoming(
         
             # Add match to Bets
             for type in ["HUB"]:
-                advice, strength, bookmaker_odds = calculate_advice_and_strength(
+                advice, strength, bookmaker_odds, kelly = calculate_advice_and_strength(
                     match,
                     live_odds[match.league_id],
                     team_names,
@@ -111,7 +111,7 @@ def upcoming(
                     )
 
                 if advice is not None and strength is not None:
-                    add_match_to_bets(session, match, type, advice, strength, bookmaker_odds)
+                    add_match_to_bets(session, match, type, advice, strength, bookmaker_odds, kelly)
 
     print("Done adding and updating")
 
