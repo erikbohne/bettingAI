@@ -95,7 +95,6 @@ class PlayerStats(Base):
         ),
     )
 
-
 class Matches(Base):
     __tablename__ = "matches"
     id = Column(Integer, primary_key=True)
@@ -166,9 +165,17 @@ class MatchStats(Base):
 
 
 # Processed data for model training
-class Processed(Base):
+class Processed0(Base):
     __tablename__ = "processed_for_model0"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    league_id = Column(Integer, ForeignKey("leagues.id"))
+    match_id = Column(Integer, ForeignKey("matches.id"))
+    inputs = Column(ARRAY(Float))
+    labels = Column(ARRAY(Integer))
+
+class Processed1(Base):
+    __tablename__ = "processed_for_model1"
+    id = Column(Integer, primary_key=True, autoincrement=True)
     league_id = Column(Integer, ForeignKey("leagues.id"))
     match_id = Column(Integer, ForeignKey("matches.id"))
     inputs = Column(ARRAY(Float))
@@ -184,6 +191,7 @@ class Performance(Base):
     bet_type = Column(String) # what bet category was it
     bet_outcome = Column(String) # what did we bet on
     odds = Column(ARRAY(Float))
+    kelly_fraction = Column(Float)
     placed = Column(Integer)
     outcome = Column(Boolean)
     
@@ -200,14 +208,17 @@ class Upcoming(Base):
     __tablename__ = "upcoming"
     id = Column(Integer, primary_key=True)
     match_id = Column(Integer, ForeignKey("schedule.match_id"))
-    inputs = Column(ARRAY(Float))
+    inputs0 = Column(ARRAY(Float))
+    inputs1 = Column(ARRAY(Float))
 
 class Bets(Base):
     __tablename__ = "bets"
     id = Column(Integer, primary_key=True)
     match_id = Column(Integer, ForeignKey("schedule.match_id"))
+    model_id = Column(Integer)
     bet_type = Column(String)  # hub, btts, over/under
     odds = Column(ARRAY(Float)) # [2.34, 2.50, 1.80] or [1.86, 1.90]
     value = Column(String)
+    kelly_fraction = Column(Float)
     strength = Column(Float) # (bookmakers odds) / (ai model odds)
     change = Column(Float) # change in strength from last check
