@@ -83,6 +83,41 @@ def features_for_model0(
 
     return features
 
+def features_for_model1(
+    teamID: int,
+    opponentID: int,
+    leagueID: int,
+    season: str,
+    thisSide: str,
+    match_date: str,
+    session: Any
+) -> List[float]:
+        
+    otherSide = "away" if thisSide == "home" else "home"
+
+    # 0-3 MATCH INFO
+    features = [1] if thisSide == "home" else [0] # init features list with home/away
+    features += get_match_info(teamID, opponentID, leagueID, match_date, season, session)
+    
+    # 4-27 SEASON STATS
+    team_ids = [teamID, opponentID]
+    sides = [thisSide, otherSide]
+    features += get_combined_team_stats(team_ids, season, sides, match_date, session)
+    
+    # 28-61 RECENT FORM
+    features += get_recent_stats(teamID, opponentID, season, match_date, session)
+    
+    # 62-79 H2H
+    
+    # 80-83 TIME AND DATE
+    
+    # 84-95 LEAGUE STATISTICS
+    
+    # 96-110 CONDITION
+    
+    
+    
+    return features
 
 def labels(matchID: int,
            team_id: int,

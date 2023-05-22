@@ -1,5 +1,5 @@
 # Match info
-0. perspective (0 = home, 1 = away)
+0. perspective (1 = home, 0 = away)
 1. Games played this season (divided 38)
 2. this team league rank
 3. opponent league rank
@@ -36,33 +36,35 @@
 27. Opponents clean no goals rate on the other side
 
 # Recent Form
-28. This teams average goal last 3 games
-29. This teams average goal last 5 games
-30. This teams average goal last 10 games
-31. Opponents average goal last 3 games
-32. Opponents average goal last 5 games
-33. Opponents average goal last 10 games
+28. This teams average goals last 3
+29. This teams no goals rate last 3
+30. This teams goal diff last 3
+31. This teams goals conceded last 3
 
-34. This teams no goal last 3 games
-35. This teams no goal last 5 games
-36. This teams no goal last 10 games
-37. Opponents no goal last 3 games
-38. Opponents no goal last 5 games
-39. Opponents no goal last 10 games
+32. This teams average goals last 5
+33. This teams no goals rate last 5
+34. This teams goal diff last 5
+35. This teams goals conceded last 5
 
-40. This teams average goaldiff last 3 games
-41. This teams average goaldiff last 5 games
-42. This teams average goaldiff last 10 games
-43. Opponents average goaldiff last 3 games
-44. Opponents average goaldiff last 5 games
-45. Opponents average goaldiff last 10 games
+36. This teams average goals last 10
+37. This teams no goals rate last 10
+38. This teams goal diff last 10
+39. This teams goals conceded last 10
 
-46. This teams average conceded goal last 3 games
-47. This teams average conceded goal last 5 games
-48. This teams average conceded goal last 10 games
-49. Opponents average conceded goal last 3 games
-50. Opponents average conceded goal last 5 games
-51. Opponents average conceded goal last 10 games
+40. Opponents average goals last 3
+41. Opponents no goals rate last 3
+42. Opponents goal diff last 3
+43. Opponents goals conceded last 3
+
+44. Opponents average goals last 5
+45. Opponents no goals rate last 5
+46. Opponents goal diff last 5
+47. Opponents goals conceded last 5
+
+48. Opponents average goals last 10
+49. Opponents no goals rate last 10
+50. Opponents goal diff last 10
+51. Opponents goals conceded last 10
 
 52. This teams side points rate last 3
 53. This teams side points rate last 5

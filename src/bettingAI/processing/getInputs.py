@@ -2,12 +2,63 @@ from typing import List, Tuple, Dict, Union, Any
 import itertools
 from datetime import datetime, timedelta
 
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, text
 from sqlalchemy.orm.session import Session
 
 from bettingAI.googleCloud.databaseClasses import *
 from bettingAI.processing.helpers import euros_to_number, get_outcome
 
+# Main info
+def get_match_info(team_id: int, opponent_id: int, league_id: int, match_date: str, season: str, session: Session):
+    # Fetch the games played and points for all teams in the league up to the match date
+    query = text("""
+        SELECT
+            teams.id AS team_id,
+            COUNT(matches.id) AS games_played,
+            SUM(
+                CASE 
+                    WHEN matches.home_goals > matches.away_goals AND teams.id = matches.home_team_id THEN 3 
+                    WHEN matches.home_goals = matches.away_goals THEN 1
+                    WHEN matches.home_goals < matches.away_goals AND teams.id = matches.away_team_id THEN 3
+                    ELSE 0 
+                END
+            ) AS points
+        FROM matches
+        JOIN teams ON (matches.home_team_id = teams.id OR matches.away_team_id = teams.id)
+        WHERE matches.date < :match_date AND matches.season = :season AND matches.league_id = :league_id
+        GROUP BY teams.id
+    """)
+
+    result = session.execute(query, {"match_date": match_date, "season": season, "league_id": league_id})
+
+    # Create the teams_stats dictionary
+    teams_stats = {}
+    for row in result:
+        id = row[0]
+        games_played = row[1]
+        points = row[2]
+        teams_stats[id] = {'games_played': games_played, 'points': points}
+
+    if len(teams_stats.keys()) not in [16, 18, 20]:
+        raise ValueError("Could not create complete table (most commonly because it's the first match)")
+
+    this_team_stats = teams_stats[team_id]
+    
+    # Calculate the league rank of each team
+    ranking = sorted(teams_stats.items(), key=lambda x: x[1]['points'], reverse=True)
+    place = 1
+    for team, _ in ranking:
+        if team == team_id:
+            this_team_rank = place
+        elif team == opponent_id:
+            opponent_rank = place
+        place += 1
+
+    return [
+        this_team_stats['games_played'] / 38,
+        this_team_rank,
+        opponent_rank
+    ]
 
 def get_combined_team_stats(
     team_ids: List[int],
@@ -16,18 +67,6 @@ def get_combined_team_stats(
     date: datetime,
     session: Session
 ) -> List[float]:
-    """Returns all the features needed from a match for model0 training.
-
-    Args:
-        team_ids (List[int]): A list of two team IDs.
-        season (str): The season for which to retrieve the team stats.
-        sides (List[str]): A list of two sides, representing "home" and "away".
-        date (datetime.datetime): The date used to filter matches.
-        session (Session): The SQLAlchemy session object.
-
-    Returns:
-        List[float]: A list of floating-point values representing the team features.
-    """
     if len(team_ids) != 2 or len(sides) != 2:
         raise ValueError("Expected 2 team_ids and 2 sides")
 
@@ -62,6 +101,7 @@ def get_combined_team_stats(
                 "draw_count": 0,
                 "loss_count": 0,
                 "clean_sheet_count": 0,
+                "no_goals_count": 0,  # New statistic
             }
             for side in sides
         }
@@ -95,6 +135,9 @@ def get_combined_team_stats(
                 if goals_conceded == 0:
                     stats["clean_sheet_count"] += 1
 
+                if goals_scored == 0:
+                    stats["no_goals_count"] += 1 
+
     for team_id in team_ids:
         for side in sides:
             stats = team_stats[team_id][side]
@@ -108,125 +151,43 @@ def get_combined_team_stats(
                 ]:
                     stats[key] /= match_count
 
-                for key in ["win_count", "draw_count", "loss_count", "clean_sheet_count"]:
-                    stats[key] = stats[key] / match_count
-
+                for count_key in ["win_count", "draw_count", "loss_count", "clean_sheet_count", "no_goals_count"]:
+                    rate_key = count_key.replace("_count", "_rate")
+                    stats[rate_key] = stats[count_key] / match_count
+        
     teamFeatures = {}
-    # Extracting the stats for each team
-    for stat_type in [
-        "match_count",
-        "total_goals",
-        "total_conceded_goals",
-        "total_goal_difference",
-        "win_count",
-        "draw_count",
-        "loss_count",
-        "clean_sheet_count",
-    ]:
-        teamFeatures[f"team_side1_{stat_type}_season"] = team_stats[team_ids[0]][
-            sides[0]
-        ][stat_type]
-        teamFeatures[f"team_side2_{stat_type}_season"] = team_stats[team_ids[0]][
-            sides[1]
-        ][stat_type]
-        teamFeatures[f"opponent_side1_{stat_type}_season"] = team_stats[team_ids[1]][
-            sides[1]
-        ][stat_type]
-        teamFeatures[f"opponent_side2_{stat_type}_season"] = team_stats[team_ids[1]][
-            sides[0]
-        ][stat_type]
 
-    # Calculating the average values
-    for stat_type in ["total_goals", "total_conceded_goals", "total_goal_difference"]:
-        avg_type = stat_type.replace("total_", "average_")
-        teamFeatures[f"team_side1_{avg_type}_season"] = (
-            teamFeatures[f"team_side1_{stat_type}_season"]
-            / teamFeatures["team_side1_match_count_season"]
-            if teamFeatures["team_side1_match_count_season"] > 0
-            else 0
-        )
-        teamFeatures[f"team_side2_{avg_type}_season"] = (
-            teamFeatures[f"team_side2_{stat_type}_season"]
-            / teamFeatures["team_side2_match_count_season"]
-            if teamFeatures["team_side2_match_count_season"] > 0
-            else 0
-        )
-        teamFeatures[f"opponent_side1_{avg_type}_season"] = (
-            teamFeatures[f"opponent_side1_{stat_type}_season"]
-            / teamFeatures["opponent_side1_match_count_season"]
-            if teamFeatures["opponent_side1_match_count_season"] > 0
-            else 0
-        )
-        teamFeatures[f"opponent_side2_{avg_type}_season"] = (
-            teamFeatures[f"opponent_side2_{stat_type}_season"]
-            / teamFeatures["opponent_side2_match_count_season"]
-            if teamFeatures["opponent_side2_match_count_season"] > 0
-            else 0
-        )
-
-    # Calculating the win, draw, loss, and clean sheet rates
-    for stat_type in ["win_count", "draw_count", "loss_count", "clean_sheet_count"]:
-        rate_type = stat_type.replace("_count", "_rate")
-        teamFeatures[f"team_side1_{rate_type}_season"] = teamFeatures[
-            f"team_side1_{stat_type}_season"
-        ]
-        teamFeatures[f"team_side2_{rate_type}_season"] = teamFeatures[
-            f"team_side2_{stat_type}_season"
-        ]
-        teamFeatures[f"opponent_side1_{rate_type}_season"] = teamFeatures[
-            f"opponent_side1_{stat_type}_season"
-        ]
-        teamFeatures[f"opponent_side2_{rate_type}_season"] = teamFeatures[
-            f"opponent_side2_{stat_type}_season"
-        ]
-
-    # Adding win rate features
-    teamFeatures["team_side1_winrate_season"] = (
-        teamFeatures["team_side1_win_count_season"]
-        / teamFeatures["team_side1_match_count_season"]
-        if teamFeatures["team_side1_match_count_season"] != 0
-        else 0
-    )
-    teamFeatures["team_side2_winrate_season"] = (
-        teamFeatures["team_side2_win_count_season"]
-        / teamFeatures["team_side2_match_count_season"]
-        if teamFeatures["team_side2_match_count_season"] != 0
-        else 0
-    )
-    teamFeatures["opponent_side1_winrate_season"] = (
-        teamFeatures["opponent_side1_win_count_season"]
-        / teamFeatures["opponent_side1_match_count_season"]
-        if teamFeatures["opponent_side1_match_count_season"] != 0
-        else 0
-    )
-    teamFeatures["opponent_side2_winrate_season"] = (
-        teamFeatures["opponent_side2_win_count_season"]
-        / teamFeatures["opponent_side2_match_count_season"]
-        if teamFeatures["opponent_side2_match_count_season"] != 0
-        else 0
-    )
+    for stat_type in ["total_goals", "total_conceded_goals", "total_goal_difference", "win_rate", "draw_rate", "loss_rate", "clean_sheet_rate", "no_goals_rate"]:
+        teamFeatures[f"team_side1_{stat_type}_season"] = team_stats[team_ids[0]][sides[0]][stat_type]
+        teamFeatures[f"team_side2_{stat_type}_season"] = team_stats[team_ids[0]][sides[1]][stat_type]
+        teamFeatures[f"opponent_side1_{stat_type}_season"] = team_stats[team_ids[1]][sides[1]][stat_type]
+        teamFeatures[f"opponent_side2_{stat_type}_season"] = team_stats[team_ids[1]][sides[0]][stat_type]
 
     data_points = [
-        teamFeatures["team_side1_average_goals_season"],
-        teamFeatures["team_side2_average_goals_season"],
-        teamFeatures["opponent_side1_average_goals_season"],
-        teamFeatures["opponent_side2_average_goals_season"],
-        teamFeatures["team_side1_average_conceded_goals_season"],
-        teamFeatures["team_side2_average_conceded_goals_season"],
-        teamFeatures["opponent_side1_average_conceded_goals_season"],
-        teamFeatures["opponent_side2_average_conceded_goals_season"],
-        teamFeatures["team_side1_average_goal_difference_season"],
-        teamFeatures["team_side2_average_goal_difference_season"],
-        teamFeatures["opponent_side1_average_goal_difference_season"],
-        teamFeatures["opponent_side2_average_goal_difference_season"],
-        teamFeatures["team_side1_winrate_season"],
-        teamFeatures["team_side2_winrate_season"],
-        teamFeatures["opponent_side1_winrate_season"],
-        teamFeatures["opponent_side2_winrate_season"],
+        teamFeatures["team_side1_total_goals_season"],
+        teamFeatures["team_side2_total_goals_season"],
+        teamFeatures["opponent_side1_total_goals_season"],
+        teamFeatures["opponent_side2_total_goals_season"],
+        teamFeatures["team_side1_total_conceded_goals_season"],
+        teamFeatures["team_side2_total_conceded_goals_season"],
+        teamFeatures["opponent_side1_total_conceded_goals_season"],
+        teamFeatures["opponent_side2_total_conceded_goals_season"],
+        teamFeatures["team_side1_total_goal_difference_season"],
+        teamFeatures["team_side2_total_goal_difference_season"],
+        teamFeatures["opponent_side1_total_goal_difference_season"],
+        teamFeatures["opponent_side2_total_goal_difference_season"],
+        teamFeatures["team_side1_win_rate_season"],
+        teamFeatures["team_side2_win_rate_season"],
+        teamFeatures["opponent_side1_win_rate_season"],
+        teamFeatures["opponent_side2_win_rate_season"],
         teamFeatures["team_side1_clean_sheet_rate_season"],
         teamFeatures["team_side2_clean_sheet_rate_season"],
         teamFeatures["opponent_side1_clean_sheet_rate_season"],
         teamFeatures["opponent_side2_clean_sheet_rate_season"],
+        teamFeatures["team_side1_no_goals_rate_season"],
+        teamFeatures["team_side2_no_goals_rate_season"],
+        teamFeatures["opponent_side1_no_goals_rate_season"],
+        teamFeatures["opponent_side2_no_goals_rate_season"],
     ]
 
     return data_points
@@ -324,6 +285,55 @@ def get_average_player_value(
 
 
 # Recent form
+def get_recent_stats(team_id: int, opponent_id: int, season: str, date: datetime, session: Session) -> List[float]:
+    # Get last 10 games for both teams before the given date
+    team_matches = (
+        session.query(Matches)
+        .filter(
+            and_(
+                or_(Matches.home_team_id == team_id, Matches.away_team_id == team_id),
+                Matches.date < date,
+                Matches.season == season,
+            )
+        )
+        .order_by(Matches.date.desc())
+        .limit(10)
+        .all()
+    )
+
+    opponent_matches = (
+        session.query(Matches)
+        .filter(
+            and_(
+                or_(Matches.home_team_id == opponent_id, Matches.away_team_id == opponent_id),
+                Matches.date < date,
+            )
+        )
+        .order_by(Matches.date.desc())
+        .limit(10)
+        .all()
+    )
+
+    def calculate_stats(matches: List[Matches], team_id: int) -> List[float]:
+        stats = []
+
+        for num_games in [3, 5, 10]:
+            games = matches[:num_games]
+            goals_scored = sum(match.home_goals if match.home_team_id == team_id else match.away_goals for match in games) / num_games
+            no_goal_games = sum(1 for match in games if (match.home_goals if match.home_team_id == team_id else match.away_goals) == 0) / num_games
+            goals_diff = sum((match.home_goals - match.away_goals) if match.home_team_id == team_id else (match.away_goals - match.home_goals) for match in games) / num_games
+            goals_conceded = sum(match.away_goals if match.home_team_id == team_id else match.home_goals for match in games) / num_games
+
+            stats.extend([goals_scored, no_goal_games, goals_diff, goals_conceded])
+
+        return stats
+
+    team_stats = calculate_stats(team_matches, team_id)
+    opponent_stats = calculate_stats(opponent_matches, opponent_id)
+    print(len(team_stats + opponent_stats))
+    return team_stats + opponent_stats
+
+
 def get_points_won_ratio(
     teamID: int,
     matches: List
@@ -364,7 +374,6 @@ def get_points_won_ratio(
         )
 
     return points_won_ratio[3], points_won_ratio[5], points_won_ratio[10]
-
 
 def get_outcome_streak(
     teamID: int,
@@ -563,7 +572,6 @@ def get_recent_encounters(
     win_rate = wins / total_matches if total_matches > 0 else 0
     return win_rate
 
-
 def get_average_goals_per_match(matches: List) -> float:
     """
     Returns the average goals scored in matches between teamID and opponentID.
@@ -587,7 +595,6 @@ def get_average_goals_per_match(matches: List) -> float:
         average_goals_per_match = 0
 
     return average_goals_per_match
-
 
 def get_average_goals_conceded_per_match(
     teamID: int,
@@ -616,7 +623,6 @@ def get_average_goals_conceded_per_match(
     average_goals_conceded = goals_conceded / total_matches if total_matches > 0 else 0
 
     return average_goals_conceded
-
 
 def get_average_goal_difference_match(
     teamID: int,
@@ -648,7 +654,6 @@ def get_average_goal_difference_match(
 
     return average_goals_difference
 
-
 def get_btts_rate(matches: List[Any]) -> float:
     """Returns the percentage of matches where both teams score (BTTS).
 
@@ -670,7 +675,6 @@ def get_btts_rate(matches: List[Any]) -> float:
     btts_rate = btts_count / num_matches if num_matches > 0 else 0
 
     return btts_rate
-
 
 def get_clean_sheet_rate_h2h(
     teamID: int,
@@ -700,7 +704,6 @@ def get_clean_sheet_rate_h2h(
 
     return clean_sheet_rate
 
-
 def get_over_under_2_5(matches: List[Any]) -> float:
     """Returns the percentage of matches where total goals scored is more than 2.5.
 
@@ -723,7 +726,6 @@ def get_over_under_2_5(matches: List[Any]) -> float:
     over_2_5_percentage = over_2_5 / total_matches if total_matches > 0 else 0
 
     return over_2_5_percentage
-
 
 def get_outcome_streak_h2h(
     teamID: int,
@@ -764,6 +766,108 @@ def get_outcome_streak_h2h(
             break
 
     return streak if outcome else -streak
+
+
+# Time and date
+def get_time_and_date_features(match_date: datetime):
+    """Computes time and date related features."""
+    time_of_day = match_date.hour
+    day_of_week = match_date.weekday()  # 0 = Monday, 1 = Tuesday, ..., 6 = Sunday
+    month_of_year = match_date.month
+    is_weekend = int(day_of_week >= 5)  # Weekend is defined as Saturday and Sunday
+    return time_of_day, day_of_week, month_of_year, is_weekend
+
+
+# Condition
+def get_condition_features(teamID: int, match_date: datetime, session: Any):
+    """Computes condition related features."""
+    # Query for the most recent matches before the current date
+    most_recent_matches = session.execute(
+        text(
+            """
+            SELECT *
+            FROM matches
+            WHERE date < :match_date AND (home_team_id = :team_id OR away_team_id = :team_id)
+            ORDER BY date DESC
+            """
+        ),
+        {"match_date": match_date, "team_id": teamID}
+    ).fetchall()
+
+    if not most_recent_matches:
+        raise ValueError("No previous matches")
+
+    # Compute the number of days since the last match
+    days_since_last_match = (match_date - most_recent_matches[0].date).days
+
+    # Find the most recent win and loss
+    last_win_date, last_loss_date = None, None
+    for match in most_recent_matches:
+        if match.home_team_id == teamID and match.home_goals > match.away_goals:
+            last_win_date = match.date
+        elif match.away_team_id == teamID and match.away_goals > match.home_goals:
+            last_win_date = match.date
+        if last_win_date is not None:
+            break
+
+    for match in most_recent_matches:
+        if match.home_team_id == teamID and match.home_goals < match.away_goals:
+            last_loss_date = match.date
+        elif match.away_team_id == teamID and match.away_goals < match.home_goals:
+            last_loss_date = match.date
+        if last_loss_date is not None:
+            break
+
+    # Compute the number of days since the last win and loss
+    days_since_last_win = (match_date - last_win_date).days if last_win_date else None
+    days_since_last_loss = (match_date - last_loss_date).days if last_loss_date else None
+
+    # Compute the number of days since the last match against the same opponent
+    most_recent_match_against_opponent = session.execute(
+        text(
+            """
+            SELECT *
+            FROM matches
+            WHERE date < :match_date AND (home_team_id = :team_id OR away_team_id = :team_id)
+            ORDER BY date DESC
+            LIMIT 1
+            """
+        ),
+        {
+            "match_date": match_date,
+            "team_id": teamID
+        }
+    ).fetchone()
+
+    days_since_last_match_against_opponent = (
+        (match_date - most_recent_match_against_opponent.date).days
+        if most_recent_match_against_opponent
+        else None
+    )
+
+    return days_since_last_match, days_since_last_win, days_since_last_loss, days_since_last_match_against_opponent
+
+
+# League features
+def get_league_features(league_id: int, session: Any):
+    """Computes league related features."""
+    league = session.execute(
+        text(
+            """
+            SELECT *
+            FROM leagues
+            WHERE id = :league_id
+            """
+        ),
+        {"league_id": league_id}
+    ).fetchone()
+
+    if not league:
+        return None, None  # League not found
+
+    return league.level, league_id
+    
+# Match stats
 
 if __name__ == "__main__":
     raise SyntaxError("getInputs.py is only a file containing feature extraction functions.")

@@ -1,6 +1,6 @@
 from typing import List, Optional, Any
 from sqlalchemy.orm.session import Session
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, text
 
 from bettingAI.googleCloud.databaseClasses import *
 
@@ -38,7 +38,6 @@ def query_recent_form(
     )
 
     return matches
-
 
 def query_H2H(
     teamID: int,
@@ -80,3 +79,52 @@ def query_H2H(
         return matches
     else:
         return None
+
+def query_rawMatches():
+    return text(
+        """
+        SELECT 
+            m.id, 
+            m.home_team_id, 
+            m.away_team_id,
+            m.league_id,
+            m.season,
+            m.date
+        FROM matches m
+        WHERE m.season = '2022-2023' AND league_id = 47
+        ORDER BY date DESC
+        """
+    )
+    
+    return text(
+        """
+        SELECT 
+            m.id, 
+            m.home_team_id, 
+            m.away_team_id,
+            m.league_id,
+            m.season,
+            m.date
+        FROM matches m
+        JOIN (
+            SELECT 
+                l.id as league_id,
+                l.name as league_name, 
+                m.season, 
+                COUNT(*) as num_matches, 
+                l.n_teams * (l.n_teams - 1) as expected_matches
+            FROM 
+                matches m
+            JOIN
+                leagues l
+            ON
+                m.league_id = l.id
+            GROUP BY 
+                l.id, l.name, 
+                m.season
+            HAVING
+                COUNT(*) >= (l.n_teams * (l.n_teams - 1) - 10)
+        ) s
+        ON m.league_id = s.league_id AND m.season = s.season
+        """
+    )
