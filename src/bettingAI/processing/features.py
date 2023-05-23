@@ -35,10 +35,10 @@ def features_for_model0(
     # Season stats teamID, season, side, date, session
     team_ids = [teamID, opponentID]
     sides = [thisSide, otherSide]
-    features = get_combined_team_stats(team_ids, season, sides, date, session)
+    features = get_combined_team_stats(team_ids, season, sides, date, session)[:20]
 
     # Recent form
-    matches = query_recent_form(teamID, opponentID, date, session)
+    matches = query_recent_form(teamID, opponentID, date, season, session)
     (
         teamFeatures["team_points_rate_3"],
         teamFeatures["team_points_rate_5"],
@@ -49,6 +49,7 @@ def features_for_model0(
         teamFeatures["opponent_points_rate_5"],
         teamFeatures["opponent_points_rate_10"],
     ) = get_points_won_ratio(opponentID, matches)
+
 
     teamFeatures["team_outcome_streak"] = get_outcome_streak(teamID, matches)
     teamFeatures["opponent_outcome_streak"] = get_outcome_streak(opponentID, matches)
@@ -66,7 +67,7 @@ def features_for_model0(
     ) = (outcomes["win"], outcomes["draw"], outcomes["loss"])
     teamFeatures["side_distribtuion"] = get_side_distribution(teamID, thisSide, matches)
     teamFeatures["recent_encounters"] = get_recent_encounters(teamID, date, matches)
-    teamFeatures["average_goals_per_match"] = get_average_goals_per_match(matches)
+    teamFeatures["average_goals_per_match"] = get_average_goals_per_match(teamID, matches)
     teamFeatures[
         "average_goals_conceded_per_match"
     ] = get_average_goals_conceded_per_match(teamID, matches)
@@ -98,23 +99,33 @@ def features_for_model1(
     # 0-3 MATCH INFO
     features = [1] if thisSide == "home" else [0] # init features list with home/away
     features += get_match_info(teamID, opponentID, leagueID, match_date, season, session)
-    
+
     # 4-27 SEASON STATS
     team_ids = [teamID, opponentID]
     sides = [thisSide, otherSide]
     features += get_combined_team_stats(team_ids, season, sides, match_date, session)
     
     # 28-61 RECENT FORM
-    features += get_recent_stats(teamID, opponentID, season, match_date, session)
+    features += get_recent_stats(teamID, opponentID, season, match_date, session) # 28 - 51
+
+    matches = query_recent_form(teamID, opponentID, match_date, season, session)
+    features += get_points_won_ratio_1(team_ids, matches) # 52-61
+    features += get_teams_outcome_streak(team_ids, matches)
+    features += get_teams_home_away_form({teamID: thisSide, opponentID: otherSide}, matches)
     
     # 62-79 H2H
+    matches = query_H2H(teamID, opponentID, match_date, session)
+    features += get_h2h_1(matches, teamID, match_date, thisSide)
     
     # 80-83 TIME AND DATE
+    features += get_time_and_date_features(match_date)
     
     # 84-95 LEAGUE STATISTICS
+    features += get_league_features(leagueID, season, session)
     
-    # 96-110 CONDITION
-    
+    # 96-108 CONDITION
+    matches = query_recent_form(teamID, opponentID, match_date, season, session)
+    features += get_condition_features(teamID, opponentID, match_date, matches)
     
     
     return features

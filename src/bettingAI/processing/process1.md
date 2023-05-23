@@ -89,14 +89,14 @@
 69. This teams average goal difference against the other
 70. Btts rate
 71. Clean sheet rate
-72. over 0.5 goals rate
-73. over 1.5 goals rate
-74. over 2.5 goals rate
-75. over 3.5 goals rate
-76. over 4.5 goals rate
-77. over 5.5 goals rate
-78. over 6.5 goals rate
-79. This teams outcome streak against the other team
+72. This teams outcome streak against the other team
+73. over 0.5 goals rate
+74. over 1.5 goals rate
+75. over 2.5 goals rate
+76. over 3.5 goals rate
+77. over 4.5 goals rate
+78. over 5.5 goals rate
+79. over 6.5 goals rate
 
 # Time and date
 80. Time of day (17:30 -> 17/24 -> 0.71)
@@ -113,19 +113,18 @@
 89. over 0.5 goals rate
 90. over 1.5 goals rate
 91. over 2.5 goals rate
-91. over 3.5 goals rate
-92. over 4.5 goals rate
-93. over 5.5 goals rate
-94. over 6.5 goals rate
+92. over 3.5 goals rate
+93. over 4.5 goals rate
+94. over 5.5 goals rate
+95. over 6.5 goals rate
 
 # Condition
-95. This team days since last match (divided by 7)
-96. This team days since last win (divided by 28)
-97. This team Matches since last win (divided by 4)
-98. This team days since last loss (divided by 28)
-99. This team Matches since last loss (divided by 4)
-100. This team days since last match against opponent (divided by 140)
-101. This team Matches since last match against opponent (divided by 20)
+96. This team days since last match (divided by 7)
+97. This team days since last win (divided by 28)
+98. This team Matches since last win (divided by 4)
+99. This team days since last loss (divided by 28)
+100. This team Matches since last loss (divided by 4)
+101. This team days since last match against opponent (divided by 140)
 102. This team volatility score (the higher score the more volatile the outcomes are for a team)
 
 103. Opponent days since last match (divided by 7)
@@ -134,5 +133,4 @@
 106. Opponent team days since last loss (divided by 28)
 107. Opponent team Matches since last loss (divided by 4)
 108. Opponent team days since last match against opponent (divided by 140)
-109. Opponent team Matches since last match against opponent (divided by 20)
-110. Opponent volatility score (the higher score the more volatile the outcomes are for a team)
+109. Opponent volatility score (the higher score the more volatile the outcomes are for a team)

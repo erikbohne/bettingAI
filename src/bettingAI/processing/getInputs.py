@@ -330,9 +330,8 @@ def get_recent_stats(team_id: int, opponent_id: int, season: str, date: datetime
 
     team_stats = calculate_stats(team_matches, team_id)
     opponent_stats = calculate_stats(opponent_matches, opponent_id)
-    print(len(team_stats + opponent_stats))
+    
     return team_stats + opponent_stats
-
 
 def get_points_won_ratio(
     teamID: int,
@@ -450,6 +449,150 @@ def get_home_away_form(
     win_rate = (wins / total_matches) if total_matches > 0 else 0
 
     return win_rate
+
+def get_points_won_ratio_1(
+    teamIDs: List[int],
+    matches: List
+) -> Dict[int, Tuple[float, float, float]]:
+    """Returns the points won ratio for the teams in the last 3, 5, and 10 matches.
+
+    Args:
+        teamIDs (List[int]): The IDs of the teams.
+        matches (List): The list of matches to consider.
+
+    Returns:
+        Dict[int, Tuple[float, float, float]]: A dictionary where the keys are team IDs and
+        the values are tuples of points won ratio for the last 3, 5, and 10 matches.
+    """
+    # Initialize the points won and match count dictionaries
+    team_points_won = {teamID: {3: 0, 5: 0, 10: 0} for teamID in teamIDs}
+    match_count = {teamID: {3: 0, 5: 0, 10: 0} for teamID in teamIDs}
+
+    # Loop through all matches
+    for index, match in enumerate(matches):
+        # Loop through both team IDs (home and away teams)
+        for teamID in teamIDs:
+            # If the team is the home team
+            if match.home_team_id == teamID:
+                won = match.home_goals > match.away_goals
+                draw = match.home_goals == match.away_goals
+            # If the team is the away team
+            elif match.away_team_id == teamID:
+                won = match.away_goals > match.home_goals
+                draw = match.away_goals == match.home_goals
+            else:
+                continue
+
+            # Calculate points won in the match
+            points = 3 if won else 1 if draw else 0
+
+            # Calculate points won for the last 3, 5, 10 matches
+            for interval in [3, 5, 10]:
+                if match_count[teamID][interval] < interval:
+                    team_points_won[teamID][interval] += points
+                    match_count[teamID][interval] += 1
+
+    # Calculate points won ratio
+    team_points_won_ratio = {teamID: {3: 0.0, 5: 0.0, 10: 0.0} for teamID in teamIDs}
+
+    datapoints = []
+    for teamID in teamIDs:
+        for interval in [3, 5, 10]:
+            if match_count[teamID][interval] > 0:
+                datapoints.append(team_points_won[teamID][interval] / (3 * match_count[teamID][interval]))
+    
+    return datapoints
+
+def get_teams_outcome_streak(
+    teamIDs: List[int],
+    matches: List
+) -> Dict[int, int]:
+    """Returns the winning/losing streak going into a match for multiple teams.
+
+    Args:
+        teamIDs (List[int]): The IDs of the teams.
+        matches (List): The list of matches.
+
+    Returns:
+        Dict[int, int]: A dictionary with the teamID as key and the streak as value.
+    """
+    def get_outcome(match, teamID):
+        if match.home_team_id == teamID:
+            return 1 if match.home_goals > match.away_goals else -1 if match.home_goals < match.away_goals else 0
+        elif match.away_team_id == teamID:
+            return 1 if match.away_goals > match.home_goals else -1 if match.away_goals < match.home_goals else 0
+        else:
+            return False
+    
+    teams_outcome_streak = {teamID: 0 for teamID in teamIDs}
+
+    streaks = []
+    for teamID in teamIDs:
+        if len(matches) == 0:
+            teams_outcome_streak[teamID] = 0
+            continue
+        
+        streak = 0
+        for match in matches:
+            outcome = get_outcome(match, teamID)
+            if outcome:
+                if outcome == 0:  # If the match was a draw
+                    break
+                elif outcome > 0 and streak >= 0:  # If the streak continues or just starts
+                    streak += outcome
+                elif outcome < 0 and streak <= 0:
+                    streak += outcome
+                else:  # If the streak breaks (a win after a loss or a loss after a win)
+                    break
+
+        streaks.append(streak / 10)
+    
+    return streaks
+
+def get_teams_home_away_form(
+    teams_side: Dict[int, str],
+    matches: List
+) -> Dict[int, float]:
+    """
+    Returns the form from the last 5 home/away matches as wins/total.
+
+    Args:
+        teams_side (Dict[int, str]): A dictionary with the teamID as key and the side as value.
+        matches (List): The list of matches.
+
+    Returns:
+        Dict[int, float]: A dictionary with the teamID as key and the win rate as value.
+    
+    Raises:
+        ValueError: If the side value is not 'home' or 'away'.
+    """
+    teams_form = {teamID: 0.0 for teamID in teams_side.keys()}
+
+    datapoints = []
+    for teamID in teams_side.keys():
+        # Filter matches based on teamID
+        filtered_matches = [
+            match
+            for match in matches
+            if (match.home_team_id == teamID or match.away_team_id == teamID)
+        ]
+
+        # Keep only the last 5 matches
+        filtered_matches = filtered_matches[:5]
+
+        wins = 0
+        total_matches = len(filtered_matches)
+
+        for match in filtered_matches:
+            if match.home_team_id == teamID and match.home_goals > match.away_goals:
+                wins += 1
+            elif match.away_team_id == teamID and match.away_goals > match.home_goals:
+                wins += 1
+
+        win_rate = (wins / total_matches) if total_matches > 0 else 0
+        datapoints.append(win_rate)
+        
+    return datapoints
 
 
 # H2H
@@ -572,12 +715,16 @@ def get_recent_encounters(
     win_rate = wins / total_matches if total_matches > 0 else 0
     return win_rate
 
-def get_average_goals_per_match(matches: List) -> float:
+def get_average_goals_per_match(
+    teamID: int,
+    matches: List[Any]
+) -> float:
     """
     Returns the average goals scored in matches between teamID and opponentID.
 
     Args:
         matches (List): The list of matches.
+        teamID (int): The team id.
 
     Returns:
         float: The average goals scored per match.
@@ -587,7 +734,10 @@ def get_average_goals_per_match(matches: List) -> float:
 
     total_goals = 0
     for match in matches:
-        total_goals += match.home_goals + match.away_goals
+        if match.home_team_id == teamID:
+            total_goals += match.home_goals
+        else:
+            total_goals += match.away_goals
 
     if len(matches) > 0:
         average_goals_per_match = total_goals / len(matches)
@@ -767,107 +917,162 @@ def get_outcome_streak_h2h(
 
     return streak if outcome else -streak
 
+def get_over_under_rates(matches: List[Any]) -> List[float]:
+    """Returns the percentage of matches where total goals scored is over 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5.
+
+    Args:
+        matches (List[Any]): The list of matches.
+
+    Returns:
+        List[float]: The list of percentages of matches with more than 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5 total goals respectively.
+    """
+    if matches is None:
+        return [0]*7
+
+    rates = [0]*7
+    total_matches = len(matches)
+
+    for match in matches:
+        total_goals = match.home_goals + match.away_goals
+        for i, goal_limit in enumerate([0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5]):
+            if total_goals > goal_limit:
+                rates[i] += 1
+
+    for i in range(7):
+        rates[i] = rates[i] / total_matches if total_matches > 0 else 0
+
+    return rates
+
+def get_h2h_1(
+    matches,
+    teamID,
+    date,
+    thisSide
+):
+    datapoints = []
+    outcomes = get_outcome_distribution(teamID, matches)
+    datapoints += [
+        outcomes["win"], outcomes["draw"], outcomes["loss"],
+        get_side_distribution(teamID, thisSide, matches),
+        get_recent_encounters(teamID, date, matches),
+        get_average_goals_per_match(teamID, matches),
+        get_average_goals_conceded_per_match(teamID, matches),
+        get_average_goal_difference_match(teamID, matches),
+        get_btts_rate(matches),
+        get_clean_sheet_rate_h2h(teamID, matches),
+        get_outcome_streak_h2h(teamID, matches)
+    ]
+    
+    datapoints += get_over_under_rates(matches)
+
+    return datapoints
 
 # Time and date
 def get_time_and_date_features(match_date: datetime):
     """Computes time and date related features."""
-    time_of_day = match_date.hour
-    day_of_week = match_date.weekday()  # 0 = Monday, 1 = Tuesday, ..., 6 = Sunday
-    month_of_year = match_date.month
-    is_weekend = int(day_of_week >= 5)  # Weekend is defined as Saturday and Sunday
-    return time_of_day, day_of_week, month_of_year, is_weekend
+    time_of_day = match_date.hour / 24  # 0.0 - 1.0
+    day_of_week = match_date.weekday() / 7  # 0.0 - 1.0
+    quarter_of_year = ((match_date.month - 1) // 3 + 1) / 4  # 0.25, 0.5, 0.75, 1.0
+    is_weekend = int(day_of_week * 7 >= 5)  # 0 = weekday, 1 = weekend
+    return time_of_day, day_of_week, quarter_of_year, is_weekend
 
 
 # Condition
-def get_condition_features(teamID: int, match_date: datetime, session: Any):
+def get_condition_features(teamID: int, opponentID: int, match_date: datetime, matches: List[Any]):
     """Computes condition related features."""
-    # Query for the most recent matches before the current date
-    most_recent_matches = session.execute(
-        text(
-            """
-            SELECT *
-            FROM matches
-            WHERE date < :match_date AND (home_team_id = :team_id OR away_team_id = :team_id)
-            ORDER BY date DESC
-            """
-        ),
-        {"match_date": match_date, "team_id": teamID}
-    ).fetchall()
 
-    if not most_recent_matches:
-        raise ValueError("No previous matches")
+    def calculate_metrics(team_id: int, opponent_id: int = None):
+        last_match_date, last_win_date, last_loss_date, matches_since_win, matches_since_loss, last_match_with_opponent_date = None, None, None, 0, 0, None
+        volatility_score = calculate_volatility_score()
 
-    # Compute the number of days since the last match
-    days_since_last_match = (match_date - most_recent_matches[0].date).days
+        for match in matches:
+            if match.home_team_id == team_id or match.away_team_id == team_id:
+                if last_match_date is None:
+                    last_match_date = match.date
 
-    # Find the most recent win and loss
-    last_win_date, last_loss_date = None, None
-    for match in most_recent_matches:
-        if match.home_team_id == teamID and match.home_goals > match.away_goals:
-            last_win_date = match.date
-        elif match.away_team_id == teamID and match.away_goals > match.home_goals:
-            last_win_date = match.date
-        if last_win_date is not None:
-            break
+                if match.home_team_id == team_id:
+                    won = match.home_goals > match.away_goals
+                    lost = match.home_goals < match.away_goals
+                else:
+                    won = match.away_goals > match.home_goals
+                    lost = match.home_goals > match.away_goals
 
-    for match in most_recent_matches:
-        if match.home_team_id == teamID and match.home_goals < match.away_goals:
-            last_loss_date = match.date
-        elif match.away_team_id == teamID and match.away_goals < match.home_goals:
-            last_loss_date = match.date
-        if last_loss_date is not None:
-            break
+                if won and last_win_date is None:
+                    last_win_date = match.date
+                elif lost and last_loss_date is None:
+                    last_loss_date = match.date
 
-    # Compute the number of days since the last win and loss
-    days_since_last_win = (match_date - last_win_date).days if last_win_date else None
-    days_since_last_loss = (match_date - last_loss_date).days if last_loss_date else None
+                if last_win_date is None:
+                    matches_since_win += 1
+                if last_loss_date is None:
+                    matches_since_loss += 1
 
-    # Compute the number of days since the last match against the same opponent
-    most_recent_match_against_opponent = session.execute(
-        text(
-            """
-            SELECT *
-            FROM matches
-            WHERE date < :match_date AND (home_team_id = :team_id OR away_team_id = :team_id)
-            ORDER BY date DESC
-            LIMIT 1
-            """
-        ),
-        {
-            "match_date": match_date,
-            "team_id": teamID
+            if opponent_id and ((match.home_team_id == team_id and match.away_team_id == opponent_id) or (match.away_team_id == team_id and match.home_team_id == opponent_id)):
+                if last_match_with_opponent_date is None:
+                    last_match_with_opponent_date = match.date
+
+        if last_match_date is None or last_win_date is None or last_loss_date is None:
+            raise ValueError("No previous matches")
+
+        return {
+            "days_since_last_match": (match_date - last_match_date).days / 7,
+            "days_since_last_win": (match_date - last_win_date).days / 28,
+            "matches_since_last_win": matches_since_win / 4,
+            "days_since_last_loss": (match_date - last_loss_date).days / 28,
+            "matches_since_last_loss": matches_since_loss / 4,
+            "days_since_last_match_against_opponent": (match_date - last_match_with_opponent_date).days / 140 if last_match_with_opponent_date else None,
+            "volatility_score": volatility_score,
         }
-    ).fetchone()
 
-    days_since_last_match_against_opponent = (
-        (match_date - most_recent_match_against_opponent.date).days
-        if most_recent_match_against_opponent
-        else None
-    )
+    team_metrics = calculate_metrics(teamID, opponentID)
+    opponent_metrics = calculate_metrics(opponentID, teamID)
 
-    return days_since_last_match, days_since_last_win, days_since_last_loss, days_since_last_match_against_opponent
+    return list(team_metrics.values()) + list(opponent_metrics.values())
+
+
 
 
 # League features
-def get_league_features(league_id: int, session: Any):
+def get_league_features(league_id: int, season: str, session: Any) -> List[float]:
     """Computes league related features."""
-    league = session.execute(
-        text(
-            """
-            SELECT *
-            FROM leagues
-            WHERE id = :league_id
-            """
-        ),
-        {"league_id": league_id}
-    ).fetchone()
+    
+    league = session.query(Leagues).filter_by(id=league_id).first()
 
     if not league:
-        return None, None  # League not found
+        raise ValueError(f"No league found with id {league_id}")  # League not found
 
-    return league.level, league_id
+    matches = (
+        session.query(Matches)
+        .filter_by(league_id=league_id, season=season)
+        .all()
+    )
+
+    if not matches:
+        raise ValueError(f"No matches found for league with id {league_id} in season {season}") 
+
+    total_matches = len(matches)
+    total_goals = sum([match.home_goals + match.away_goals for match in matches])
+    avg_goals = total_goals / (2 * total_matches) # average goals per team per match
+
+    home_wins = sum([1 for match in matches if match.home_goals > match.away_goals])
+    away_wins = sum([1 for match in matches if match.home_goals < match.away_goals])
+    draws = total_matches - home_wins - away_wins
+
+    home_win_rate = home_wins / total_matches
+    draw_rate = draws / total_matches
+    away_win_rate = away_wins / total_matches
+
+    over_goals_rate = []
+    for i in range(7):  # for over 0.5 to over 6.5
+        over_goals = sum([1 for match in matches if match.home_goals + match.away_goals > (i + 0.5)])
+        over_goals_rate.append(over_goals / total_matches)
+
+    return [league.level, avg_goals, home_win_rate, draw_rate, away_win_rate] + over_goals_rate
+
     
-# Match stats
+# Volatility score
+def calculate_volatility_score():
+    return 69
 
 if __name__ == "__main__":
     raise SyntaxError("getInputs.py is only a file containing feature extraction functions.")

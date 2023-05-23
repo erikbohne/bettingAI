@@ -1,12 +1,15 @@
 """
 Program that processes the raw match data from the database to be used in model1
 """
+import traceback
+
 import sqlalchemy
 from sqlalchemy import text
 from tqdm.auto import tqdm
 
 from bettingAI.processing.queries import query_rawMatches
-from bettingAI.processing.features import features_for_model1
+from bettingAI.processing.features import features_for_model1, labels
+from bettingAI.googleCloud.databaseClasses import Processed1
 from bettingAI.googleCloud.initPostgreSQL import initSession
 
 def main(session: sqlalchemy.orm.Session) -> None:
@@ -29,23 +32,26 @@ def main(session: sqlalchemy.orm.Session) -> None:
 
     for matchID, teamID, opponentID, leagueID, season, date in tqdm(rawMatches, desc="Processing matches"):
         try:
-            print(matchID, date, teamID, opponentID)
-            home_features = features_for_model1(
-                teamID, opponentID, leagueID, season, "home", date, session
+            team1 = Processed1(
+                match_id = matchID,
+                league_id = leagueID,
+                inputs = features_for_model1(teamID, opponentID, leagueID, season, "home", date, session),
+                labels = labels(matchID, teamID, session)
             )
-            print(home_features[28:])
-            print(len(home_features))
-            exit()
-        except Exception as e:
-            print(e)
-        try:
-            print(matchID)
-            home_features = features_for_model1(
-                opponentID, teamID, leagueID, season, "away", date, session
+            team2 = Processed1(
+                match_id = matchID,
+                league_id = leagueID,
+                inputs = features_for_model1(opponentID, teamID, leagueID, season, "away", date, session),
+                labels = labels(matchID, opponentID, session)
             )
-            print(len(home_features))
+            session.add(team1)
+            session.add(team2)
+            session.commit()
+        except ValueError:
+            continue
         except Exception as e:
-            print(e)
+            session.rollback()
+            print(f"Could not commit {matchID} -> {e}")
     
 if __name__ == "__main__":
     session = initSession()

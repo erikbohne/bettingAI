@@ -8,7 +8,8 @@ from bettingAI.googleCloud.databaseClasses import *
 def query_recent_form(
     teamID: int, 
     opponentID: int, 
-    date: Any, 
+    date: Any,
+    season: str,
     session: Session
 ) -> List[Any]:
     """Queries and returns recent matches involving teamID and opponentID before the specified date.
@@ -31,6 +32,7 @@ def query_recent_form(
                     Matches.away_team_id.in_([teamID, opponentID]),
                 ),
                 Matches.date < date,
+                Matches.season == season,
             )
         )
         .order_by(Matches.date.desc())
@@ -81,21 +83,6 @@ def query_H2H(
         return None
 
 def query_rawMatches():
-    return text(
-        """
-        SELECT 
-            m.id, 
-            m.home_team_id, 
-            m.away_team_id,
-            m.league_id,
-            m.season,
-            m.date
-        FROM matches m
-        WHERE m.season = '2022-2023' AND league_id = 47
-        ORDER BY date DESC
-        """
-    )
-    
     return text(
         """
         SELECT 
