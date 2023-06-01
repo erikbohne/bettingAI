@@ -8,17 +8,20 @@ import tensorflow as tf
 import numpy as np
 
 from bettingAI.googleCloud.databaseClasses import Upcoming, Bets, Performance
-from bettingAI.processing.features import features_for_model0
+from bettingAI.processing.features import features_for_model0, features_for_model1
 from bettingAI.writer.scraper import get_match_info
 
 
 def add_match_to_bets(
     session: sqlalchemy.orm.Session, 
-    match: object, 
+    match: object,
+    model: int, 
     bet_type: str, 
     advice: str, 
     strength: float, 
     bookmaker_odds: list[float],
+    real_odds: list[float],
+    probabilities: list[float],
     kelly: float
     ) -> None:
     """
@@ -31,6 +34,7 @@ def add_match_to_bets(
     Args:
         session (Session): SQLAlchemy Session object connected to the database.
         match (object): A match object with at least an attribute 'match_id'.
+        model (int): The model that was used to make bet.
         bet_type (str): Type of the bet to be placed.
         advice (str): The advice for the bet.
         strength (float): The strength of the bet.
@@ -44,12 +48,15 @@ def add_match_to_bets(
         session.add(
         Bets(
         match_id=match.match_id,
+        model_id=model,
         bet_type=bet_type,
         odds=bookmaker_odds,
+        real_odds=real_odds,
+        probabilities=probabilities,
         value=advice,
         kelly_fraction=kelly,
         strength=round(strength, 2),
-        change=1.00
+        change=0
         )
         )
         session.commit()
@@ -61,7 +68,8 @@ def add_match_to_bets(
 def add_match_to_upcoming(
     session: sqlalchemy.orm.Session,
     match: object,
-    inputs: list
+    inputs0: list,
+    inputs1: list
     ) -> None:
     """
     Add a match to the Upcoming table in the database.
@@ -73,18 +81,21 @@ def add_match_to_upcoming(
     Args:
         session (Session): SQLAlchemy Session object connected to the database.
         match (object): A match object with at least an attribute 'match_id'.
-        inputs (List): A list of inputs for the upcoming match.
+        inputs0 (List): A list of inputs for model 0 for the upcoming match.
+        inputs1 (List): A list of inputs for model 1 for the upcoming match.
 
     Returns:
         None
     """
     try:
-        session.add(
-        Upcoming(
-        match_id=match.match_id,
-        inputs=inputs
-        )
-        )
+        session.execute(text(
+            f"INSERT INTO upcoming (match_id, inputs0, inputs1) VALUES (:match_id, :inputs0, :inputs1)"
+        ),
+        {
+            'match_id': match.match_id,
+            'inputs0': inputs0,
+            'inputs1': inputs1
+        })
         session.commit()
     except Exception as e:
         session.rollback()
@@ -95,7 +106,8 @@ def calculate_advice_and_strength(
     match: object, 
     odds: list, 
     team_names: list, 
-    model: tf.keras.Model, 
+    model: tf.keras.Model,
+    model_id: int, 
     session: sqlalchemy.orm.Session
     ) -> Tuple[
         Optional[str], 
@@ -103,30 +115,51 @@ def calculate_advice_and_strength(
         Optional[List[float]],
         Optional[float]]:
     """
-    Calculate the betting advice, strength, and bookmaker odds for a given match.
+    Calculate the betting advice, strength, bookmaker odds, real odds, predicted probabilities, and Kelly fraction for a given match.
 
     Args:
         match (object): A match object containing details of a specific match.
-        odds (List): A list of odds for the match.
-        team_names (List): A list of team names for the match.
+        odds (list): A list of odds for the match.
+        team_names (list): A list of team names for the match.
         model (tf.keras.Model): A TensorFlow model to predict the match outcome.
+        model_id (int): The id for the model used.
         session (sqlalchemy.orm.Session): SQLAlchemy Session object connected to the database.
 
     Returns:
-        Tuple[Optional[str], Optional[float], Optional[List[float]], Optional[float]]: A tuple containing 
-        advice (str or None), strength (float or None), bookmaker odds (list of floats or None) and kelly_fraction (float or None).
-        Returns (None, None, None) if no matched odds are found.
+        Tuple[Optional[str], Optional[float], Optional[List[float]], Optional[List[float]], Optional[List[float]], Optional[float]]:
+            A tuple containing:
+                - advice (str or None): Betting advice based on the predicted outcome and odds.
+                - strength (float or None): Strength of the advice based on the discrepancy between real and bookmaker odds.
+                - odds (list of floats or None): Bookmaker odds for home win, draw, and away win.
+                - real_odds (list of floats or None): Calculated real odds based on the model's predicted probabilities.
+                - probabilities (list of floats or None): Model's predicted probabilities for home win, draw, and away win.
+                - kelly_fraction (float or None): Calculated Kelly fraction for optimal bet sizing.
+            Returns (None, None, None, None, None, None) if no matched odds are found.
     """
-    input_data = np.array(
-        features_for_model0(
-            int(match.home_team_id),
-            int(match.away_team_id),
-            match.season,
-            "home",
-            match.date,
-            session
-        )
-    ).reshape(1, -1)  # Reshape the input data into the expected format
+    # Get the inputs for the correct model
+    if model_id == 0:
+        input_data = np.array(
+            features_for_model0(
+                int(match.home_team_id),
+                int(match.away_team_id),
+                match.season,
+                "home",
+                match.date,
+                session
+            )
+        ).reshape(1, -1)  # Reshape the input data into the expected format
+    elif model_id == 1:
+        input_data = np.array(
+            features_for_model1(
+                int(match.home_team_id),
+                int(match.away_team_id),
+                match.league_id, 
+                match.season,
+                "home",
+                match.date,
+                session
+            )
+        ).reshape(1, -1)  # Reshape the input data into the expected format
 
     probabilities = model.predict(input_data)
     real_odds = calculate_real_odds(probabilities[0])
@@ -146,12 +179,12 @@ def calculate_advice_and_strength(
         odds = [matched_odds['h'], matched_odds['d'], matched_odds['a']]
         advice, strength = find_value(real_odds, odds)
     else:
-        return None, None, None, None
+        return None, None, None, None, None, None
     
     idx = 0 if advice == "H" else 1 if advice == "U" else 2
     kelly_fraction = calculate_kelly_fraction(odds[idx], probabilities[0][idx])
 
-    return advice, strength, odds, kelly_fraction
+    return advice, strength, odds, real_odds, [prob for prob in probabilities[0]], kelly_fraction
 
 def calculate_kelly_fraction(
     odds: float,
@@ -169,7 +202,7 @@ def calculate_kelly_fraction(
     b = odds - 1
     q = 1 - probability
     f_star = (b * probability - q) / b
-    return f_star
+    return round(f_star, 2)
 
 def calculate_real_odds(
     probabilities: List[float]
@@ -227,7 +260,8 @@ def find_value(
 
 def get_bets_for_match(
     session: sqlalchemy.orm.Session,
-    match_id: int
+    match_id: int,
+    model_id: int
     ) -> List[object]:
     """
     Fetches the bets associated with a particular match from the database.
@@ -238,16 +272,18 @@ def get_bets_for_match(
     Args:
         session (sqlalchemy.orm.Session): The database session to use for the query.
         match_id (int): The ID of the match to fetch bets for.
+        model_id (int): The ID of the model to fetch bets for.
 
     Returns:
         List[object]: A list of SQLAlchemy ResultProxy objects representing the bets
         associated with the specified match.
     """
     return session.execute(text(
-        "SELECT id as id, strength as strength FROM bets WHERE match_id = :match_id;"
+        "SELECT id as id, strength as strength, bet_type as type FROM bets WHERE match_id = :match_id AND model_id = :model_id;"
     ),
         {
-            'match_id': match_id
+            'match_id': match_id,
+            'model_id': model_id
         }
     ).fetchall()
     
@@ -413,51 +449,70 @@ def remove_played_matches(
     # Query for all betting tips on that match
     for match in played_matches:
         print(match.match_id)
-        bets = session.execute(text(
-            "SELECT id as id, bet_type as type, odds as odds, value as value, kelly as kelly FROM bets WHERE match_id = :match_id;"),
-            {
-                'match_id': match.match_id
-            }
-        ).fetchall()
-        
-        # Get the result of the match
-        result = get_match_info(f"/match/{match.match_id}", justMain=True)
-        
-        for bet in bets: # iterate through all betting tips for that match
+        for model in [0, 1]:
+            bets = session.execute(text(
+                """
+                SELECT 
+                    id as id, 
+                    bet_type as type, 
+                    odds as odds,
+                    real_odds as real_odds,
+                    probabilites as probabilites,
+                    value as value, 
+                    kelly_fraction as kelly 
+                FROM bets 
+                WHERE match_id = :match_id 
+                AND model_id = :model_id;
+                """
+            ),
+                {
+                    'match_id': match.match_id,
+                    'model_id': model
+                }
+            ).fetchall()
+            
+            # Get the result of the match
+            result = get_match_info(f"/match/{match.match_id}", justMain=True)
+            
+            for bet in bets: # iterate through all betting tips for that match
 
-            if bet.type == "HUB":
-                if result["homescore"] > result["awayscore"]:
-                    HUB = "H"
-                elif result["homescore"] == result["awayscore"]:
-                    HUB = "U"
-                else:
-                    HUB = "B"
+                if bet.type == "HUB":
+                    if result["homescore"] > result["awayscore"]:
+                        HUB = "H"
+                    elif result["homescore"] == result["awayscore"]:
+                        HUB = "U"
+                    else:
+                        HUB = "B"
 
-            outcome = True if bet.value == HUB else False
-
-            # Add match predictions to the predictions database
-            try:
-                session.add(Performance(
-                    match_id=match.match_id,
-                    model_id=0,
-                    bet_type=bet.type,
-                    bet_outcome=bet.value,
-                    odds=bet.odds,
-                    placed=int(250 * bet.kelly),
-                    outcome=outcome
-                ))
-                session.execute(text(
-                    "DELETE FROM bets WHERE id = :id AND bet_type = :type;"),
-                    {
-                        'id': bet.id,
-                        'type': bet.type
-                    }
-                )
-                session.commit()
-            except Exception as e:
-                session.rollback()
-                print(e)
-                traceback.print_exc()
+                outcome = True if bet.value == HUB else False
+                print(model, bet.value, HUB)
+                # Add match predictions to the predictions database
+                try:
+                    session.add(Performance(
+                        match_id=match.match_id,
+                        model_id=model,
+                        bet_type=bet.type,
+                        bet_outcome=bet.value,
+                        odds=bet.odds,
+                        real_odds=bet.real_odds,
+                        probabilities=bet.probabilities,
+                        kelly_fraction=bet.kelly,
+                        placed=250,
+                        outcome=outcome,
+                        result=HUB
+                    ))
+                    session.execute(text(
+                        "DELETE FROM bets WHERE id = :id AND bet_type = :type;"),
+                        {
+                            'id': bet.id,
+                            'type': bet.type
+                        }
+                    )
+                    session.commit()
+                except Exception as e:
+                    session.rollback()
+                    print(e)
+                    traceback.print_exc()
         
         # Remove match from Upcoming
         session.execute(text(
@@ -475,6 +530,8 @@ def update_bets(
     advice: str, 
     strength: float, 
     bookmaker_odds: list[float],
+    real_odds: list[float],
+    probabilities: list[float],
     kelly: float
     ) -> None:
     """
@@ -496,15 +553,78 @@ def update_bets(
     """
     try:
         session.execute(text(
-            "UPDATE bets SET odds = :new_odds, value = :value, kelly_fraction = :kelly, strength = :new_strength, change =:change WHERE id = :bet_id;"
+            "UPDATE bets SET odds = :new_odds, real_odds = :real_odds, probabilities = :probs, value = :value, kelly_fraction = :kelly, strength = :new_strength, change =:change WHERE id = :bet_id;"
         ),
             {
                 'value': advice,
                 'new_strength': round(strength, 2),
                 'new_odds': bookmaker_odds,
+                'real_odds': real_odds,
+                'probs': probabilities,
                 'kelly': kelly,
                 'bet_id': bet.id,
                 'change': round((strength - bet.strength), 2)
+            }
+        )
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        print(e)
+        traceback.print_exc()
+        
+def track_odds(
+    session: sqlalchemy.orm.Session,
+    model: int,
+    timestamp: datetime,
+    match_id: int,
+    bet_type: str,
+    advice: str, 
+    strength: float, 
+    bookmaker_odds: list[float],
+    real_odds: list[float],
+    probabilities: list[float], 
+    kelly: float
+    ) -> None:
+    """
+    Inserts a new record in the `odds` table.
+
+    Args:
+        session (sqlalchemy.orm.Session): The SQLAlchemy Session that manages persistence to the database.
+        model (int): Identifier of the model used for predictions.
+        timestamp (datetime): The date and time when the odds are recorded.
+        match_id (int): The unique identifier for the match.
+        bet_type (str): Type of the bet made.
+        advice (str): The advice given by the betting model.
+        strength (float): The strength of the advice given by the model.
+        bookmaker_odds (list[float]): A list of the odds offered by the bookmaker.
+        real_odds (list[float]): A list of the "real" odds as determined by the betting model.
+        probabilities (list[float]): A list of the probabilities associated with the different outcomes.
+        kelly (float): The Kelly fraction for the bet.
+
+    Raises:
+        Exception: If there is an error during insertion into the database, the transaction is rolled back and the exception is raised.
+    """
+    try:
+        session.execute(text(
+            """
+            INSERT INTO odds
+                (model, date, match_id, bet_type, value, odds, real_odds, probabilities, strength, kelly_fraction)
+            VALUES
+                (:model, :date, :match_id, :bet_type, :value, :odds, :real_odds, :probs, :strength, :kelly)
+            
+            """
+        ),
+            {
+                'model': model,
+                'date': timestamp,
+                'match_id': match_id,
+                'bet_type': bet_type,
+                'value': advice,
+                'odds': bookmaker_odds,
+                'real_odds': real_odds,
+                'probs': probabilities,
+                'strength': strength,
+                'kelly': kelly
             }
         )
         session.commit()

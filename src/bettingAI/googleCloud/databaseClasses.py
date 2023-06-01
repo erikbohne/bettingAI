@@ -190,12 +190,13 @@ class Performance(Base):
     model_id = Column(Integer)
     bet_type = Column(String) # what bet category was it
     bet_outcome = Column(String) # what did we bet on
+    odds = Column(ARRAY(Float))
     real_odds = Column(ARRAY(Float))
     probabilities = Column(ARRAY(Float))
     kelly_fraction = Column(Float)
     placed = Column(Integer)
     outcome = Column(Boolean)
-    bet_outcome = Column(String)
+    result = Column(String)
     
 class Schedule(Base):
     __tablename__ = "schedule"
@@ -220,6 +221,8 @@ class Bets(Base):
     model_id = Column(Integer)
     bet_type = Column(String)  # hub, btts, over/under
     odds = Column(ARRAY(Float)) # [2.34, 2.50, 1.80] or [1.86, 1.90]
+    real_odds = Column(ARRAY(Float))
+    probabilities = Column(ARRAY(Float))
     value = Column(String)
     kelly_fraction = Column(Float)
     strength = Column(Float) # (bookmakers odds) / (ai model odds)
@@ -231,7 +234,10 @@ class Odds(Base):
     date = Column(TIMESTAMP, nullable=False) # timestamp for the odds
     match_id = Column(Integer, ForeignKey("schedule.match_id"))
     bet_type = Column(String)
+    value = Column(String)
     odds = Column(ARRAY(Float))
     real_odds = Column(ARRAY(Float))
     probabilities = Column(ARRAY(Float))
+    strength = Column(Float)
+    kelly_fraction = Column(Float)
     
